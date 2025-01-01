@@ -38,14 +38,14 @@ type ZitiProvider struct {
 
 // ZitiProviderModel describes the provider data model.
 type ZitiProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
+	Endpoint types.String `tfsdk:"mgmt_endpoint"`
 	Username types.String `tfsdk:"username"`
 	Password types.String `tfsdk:"password"`
 	CaPool   types.String `tfsdk:"capool"`
 }
 
 func (p *ZitiProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "scaffolding"
+	resp.TypeName = "ziti"
 	resp.Version = p.version
 }
 
@@ -267,7 +267,7 @@ func (p *ZitiProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	//Example: configTypes = []string{"myCustomAppConfigType"}
 	var configTypes []string
 
-	client, err := managementClient.Authenticate(credentials, configTypes)
+	_, err := managementClient.Authenticate(credentials, configTypes)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create client for Ziti Edge Management API",
@@ -279,15 +279,15 @@ func (p *ZitiProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	resp.DataSourceData = managementClient
+	resp.ResourceData = managementClient
 
 	tflog.Info(ctx, "Configured Ziti Edge Management client", map[string]any{"success": true})
 }
 
 func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		NewZitiHostConfigResource,
 	}
 }
 
