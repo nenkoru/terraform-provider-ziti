@@ -1,4 +1,4 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# Terraform Provider for OpenZiti
 
 _This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
 
@@ -13,6 +13,25 @@ These files contain boilerplate code that you will need to edit to create your o
 Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
 
 Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
+
+
+## Todo resources & data sources
+auth-policy                
+authenticator              
+ca                         
+config                     
+config-type               
+edge-router              
+edge-router-policy      
+enrollment
+ext-jwt-signer         
+identity              
+posture-check
+service                    
+service-edge-router-policy 
+service-policy             
+terminator                  
+transit-router             
 
 ## Requirements
 
