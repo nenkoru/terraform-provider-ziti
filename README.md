@@ -15,23 +15,27 @@ Please see the [GitHub template repository documentation](https://help.github.co
 Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
 
 
-## Todo resources & data sources
-auth-policy                
-authenticator              
-ca                         
-config                     
-config-type               
-edge-router              
-edge-router-policy      
-enrollment
-ext-jwt-signer         
-identity              
-posture-check
-service                    
-service-edge-router-policy 
-service-policy             
-terminator                  
-transit-router             
+## Entities and their status of implementation
+| Entity                     | Data Source           | Resource            |
+|----------------------------|-----------------------|---------------------|
+| auth-policy               | ❌                   | ❌                  |
+| authenticator             | ❌                   | ❌                  |
+| ca                        | ❌                   | ❌                  |
+| config                    | ❌                   | ✅                  |
+| config-type               | ❌                   | ❌                  |
+| edge-router               | ❌                   | ❌                  |
+| edge-router-policy        | ❌                   | ❌                  |
+| enrollment                | ❌                   | ❌                  |
+| ext-jwt-signer            | ❌                   | ❌                  |
+| identity                  | ❌                   | ❌                  |
+| posture-check             | ❌                   | ❌                  |
+| service                   | ❌                   | ❌                  |
+| service-edge-router-policy| ❌                   | ❌                  |
+| service-policy            | ❌                   | ❌                  |
+| terminator                | ❌                   | ❌                  |
+| transit-router            | ❌                   | ❌                  |
+
+
 
 ## Requirements
 
