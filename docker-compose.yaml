@@ -1,0 +1,25 @@
+services:
+  ziti-controller:
+    image: openziti/quickstart:latest
+    healthcheck:
+      test: curl -m 1 -s -k https://ziti-edge-controller:1280/edge/client/v1/version
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    ports:
+      - 0.0.0.0:1280:1280
+      - 0.0.0.0:6262:6262
+    environment:
+      - ZITI_CTRL_NAME=ziti-edge-controller
+      - ZITI_CTRL_EDGE_ADVERTISED_ADDRESS=ziti-edge-controller
+      - ZITI_CTRL_EDGE_ADVERTISED_PORT=1280
+      - ZITI_CTRL_EDGE_IP_OVERRIDE=127.0.0.1
+      - ZITI_CTRL_ADVERTISED_PORT=6262
+      - ZITI_EDGE_IDENTITY_ENROLLMENT_DURATION=600
+      - ZITI_ROUTER_ENROLLMENT_DURATION=600
+      - ZITI_USER=testadmin
+      - ZITI_PWD=testadmin
+      - ZITI_VERBOSE=--verbose
+    entrypoint:
+      - "/var/openziti/scripts/run-controller.sh"
+
