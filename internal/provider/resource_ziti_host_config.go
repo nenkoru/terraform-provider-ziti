@@ -543,7 +543,7 @@ type HostConfigDTO struct {
 	PortChecks             *[]PortCheckDTO              `json:"portChecks,omitempty"`
 }
 
-func ElementsToStringArray(elements []attr.Value) []string {
+func ElementsToStringArray(elements []attr.Value) *[]string {
 	if len(elements) != 0 {
 		elementsArray := []string{}
 		for _, v := range elements {
@@ -551,9 +551,9 @@ func ElementsToStringArray(elements []attr.Value) []string {
 				elementsArray = append(elementsArray, val.ValueString())
 			}
 		}
-		return elementsArray
+		return &elementsArray
 	}
-	return []string{}
+	return nil
 }
 
 func AttributesToNativeTypes(attrs map[string]attr.Value) map[string]interface{} {
@@ -623,82 +623,45 @@ func AttributesToListenOptionsStruct(attr map[string]attr.Value) ListenOptionsDT
 
 }
 
-func AttributesToPortChecksStruct(ctx context.Context, attr map[string]attr.Value) PortCheckDTO {
-
-	var portChecks PortCheckDTO
-	attrsNative := AttributesToNativeTypes(attr)
-	attrsNative = convertKeysToCamel(attrsNative)
-	GenericFromObject(attrsNative, &portChecks)
-
-	tflog.Info(ctx, "ATTRIBUTES TO PORT CHECKS")
-	jsonObj, _ := json.Marshal(attrsNative)
-	tflog.Info(ctx, string(jsonObj))
-
+func HandleActions(attr map[string]attr.Value) *[]CheckActionDTO {
 	if value, exists := attr["actions"]; exists {
 		if valueList, ok := value.(types.List); ok {
 			actionsArray := []CheckActionDTO{}
 			for _, v := range valueList.Elements() {
 				if valueObject, ok := v.(types.Object); ok {
 					var checkAction CheckActionDTO
-					attrsNative = AttributesToNativeTypes(valueObject.Attributes())
+					attrsNative := AttributesToNativeTypes(valueObject.Attributes())
 					attrsNative = convertKeysToCamel(attrsNative)
 
-					tflog.Info(ctx, "ATTRIBUTES TO ACTIONS")
-					jsonObj, _ := json.Marshal(attrsNative)
-					tflog.Info(ctx, string(jsonObj))
-
-					GenericFromObject(attrsNative, &checkAction)
+                    GenericFromObject(attrsNative, &checkAction)
 					actionsArray = append(actionsArray, checkAction)
 				}
 			}
 			if len(actionsArray) > 0 {
-				portChecks.Actions = &actionsArray
+				return &actionsArray
 			}
-
 		}
-
 	}
-	return portChecks
-
+	return nil
 }
-func AttributesToHTTPChecksStruct(ctx context.Context, attr map[string]attr.Value) HTTPCheckDTO {
 
-	var httpChecks HTTPCheckDTO
+func AttributesToStruct[T any](attr map[string]attr.Value)  T {
+	var result T
 	attrsNative := AttributesToNativeTypes(attr)
 	attrsNative = convertKeysToCamel(attrsNative)
-	GenericFromObject(attrsNative, &httpChecks)
+	GenericFromObject(attrsNative, &result)
 
-	tflog.Info(ctx, "ATTRIBUTES TO PORT CHECKS")
-	jsonObj, _ := json.Marshal(attrsNative)
-	tflog.Info(ctx, string(jsonObj))
+	// Set the actions field, assuming all such structs have Actions
+	// Modify this part if the Actions handling differs per type.
+    fieldValue := reflect.ValueOf(&result).Elem().FieldByName("Actions")
+    if fieldValue.IsValid() && fieldValue.CanSet() {
+        fieldValue.Set(reflect.ValueOf(HandleActions(attr)))
+    }
 
-	if value, exists := attr["actions"]; exists {
-		if valueList, ok := value.(types.List); ok {
-			actionsArray := []CheckActionDTO{}
-			for _, v := range valueList.Elements() {
-				if valueObject, ok := v.(types.Object); ok {
-					var checkAction CheckActionDTO
-					attrsNative = AttributesToNativeTypes(valueObject.Attributes())
-					attrsNative = convertKeysToCamel(attrsNative)
-
-					tflog.Info(ctx, "ATTRIBUTES TO ACTIONS")
-					jsonObj, _ := json.Marshal(attrsNative)
-					tflog.Info(ctx, string(jsonObj))
-
-					GenericFromObject(attrsNative, &checkAction)
-					actionsArray = append(actionsArray, checkAction)
-				}
-			}
-			if len(actionsArray) > 0 {
-				httpChecks.Actions = &actionsArray
-			}
-
-		}
-
-	}
-	return httpChecks
-
+	return result
 }
+
+
 func ElementsToListOfStructs(ctx context.Context, elements []attr.Value) []HostConfigAllowedPortsDTO {
 	if len(elements) != 0 {
 		elementsArray := []HostConfigAllowedPortsDTO{}
@@ -798,36 +761,94 @@ func GenericFromObject[T any](mapData map[string]interface{}, dto *T) error {
 	return nil
 }
 
+func convertStringList(ctx context.Context, list *[]string, elemType attr.Type) (types.List) {
+    var result types.List
+
+	if list != nil && len(*list) > 0 {
+		result, _ = types.ListValueFrom(ctx, elemType, list)
+	} else {
+		result = types.ListNull(elemType)
+	}
+	return result
+}
+
+func convertCheckActionToTerraformList(ctx context.Context, actions *[]CheckActionDTO) (types.List, diag.Diagnostics) {
+    var actionsTf []attr.Value
+    for _, item := range *actions {
+
+        actionObject, _ := JsonStructToObject(ctx, item, true, false)
+        actionObject = convertKeysToSnake(actionObject)
+
+        actionMap := NativeBasicTypedAttributesToTerraform(ctx, actionObject, CheckActionModel.AttrTypes)
+
+        actionTf, err := basetypes.NewObjectValue(CheckActionModel.AttrTypes, actionMap)
+        if err != nil {
+            oneerr := err[0]
+            tflog.Info(ctx, "Error converting actionMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
+
+        }
+        actionsTf = append(actionsTf, actionTf)
+    }
+    if len(actionsTf) > 0 {
+        actionsList, err := types.ListValueFrom(ctx, CheckActionModel, actionsTf)
+        return actionsList, err
+    } else {
+        return types.ListNull(CheckActionModel), nil
+
+    }
+}
+
+func convertChecksToTerraformList(ctx context.Context, checks interface{}, modelAttrs map[string]attr.Type, checkModel attr.Type) types.List {
+	var objects []attr.Value
+
+	checkList := reflect.ValueOf(checks)
+
+	for i := 0; i < checkList.Len(); i++ {
+		check := checkList.Index(i).Interface()
+		checkObject, _ := JsonStructToObject(ctx, check, true, false)
+		checkObject = convertKeysToSnake(checkObject)
+		delete(checkObject, "actions")
+		checkMap := NativeBasicTypedAttributesToTerraform(ctx, checkObject, modelAttrs)
+
+		actionsValue := reflect.ValueOf(check).FieldByName("Actions").Interface()
+        if actions, ok := actionsValue.(*[]CheckActionDTO); ok {
+            actionsList, err := convertCheckActionToTerraformList(ctx, actions)
+            if err != nil {
+                tflog.Info(ctx, "Error converting an array of actions to a list")
+            }
+            checkMap["actions"] = actionsList
+
+            checkTf, err := basetypes.NewObjectValue(modelAttrs, checkMap)
+            if err != nil {
+                tflog.Info(ctx, "Error converting checkMap to ObjectValue")
+            }
+
+            objects = append(objects, checkTf)
+        }
+		
+	}
+
+	checksTf, _ := types.ListValueFrom(ctx, checkModel, objects)
+	
+    return checksTf
+
+}
+
 func (dto *HostConfigDTO) ConvertToZitiResourceModel(ctx context.Context) ZitiHostConfigResourceModel {
-	var res ZitiHostConfigResourceModel
-	tflog.Info(ctx, "CONVERTING TO ZITI RESOURCE MODEL")
-	res.Address = types.StringPointerValue(dto.Address)
-	res.Port = types.Int32PointerValue(dto.Port)
-	res.Protocol = types.StringPointerValue(dto.Protocol)
-	res.ForwardProtocol = types.BoolPointerValue(dto.ForwardProtocol)
-	res.ForwardPort = types.BoolPointerValue(dto.ForwardPort)
-	res.ForwardAddress = types.BoolPointerValue(dto.ForwardAddress)
 
-	if dto.AllowedProtocols != nil && len(*dto.AllowedProtocols) > 0 {
-		allowedProtocols, _ := types.ListValueFrom(ctx, types.StringType, dto.AllowedProtocols)
-		res.AllowedProtocols = allowedProtocols
-	} else {
-		res.AllowedProtocols = types.ListNull(types.StringType)
-	}
+    res := ZitiHostConfigResourceModel{
+        Address: types.StringPointerValue(dto.Address),
+        Port: types.Int32PointerValue(dto.Port),
+        Protocol: types.StringPointerValue(dto.Protocol),
+        ForwardProtocol: types.BoolPointerValue(dto.ForwardProtocol),
+        ForwardPort: types.BoolPointerValue(dto.ForwardPort),
+        ForwardAddress: types.BoolPointerValue(dto.ForwardAddress),
 
-	if dto.AllowedAddresses != nil && len(*dto.AllowedAddresses) > 0 {
-		allowedAddresses, _ := types.ListValueFrom(ctx, types.StringType, dto.AllowedAddresses)
-		res.AllowedAddresses = allowedAddresses
-	} else {
-		res.AllowedAddresses = types.ListNull(types.StringType)
-	}
+    }
+    res.AllowedProtocols = convertStringList(ctx, dto.AllowedProtocols, types.StringType)
+    res.AllowedAddresses = convertStringList(ctx, dto.AllowedAddresses, types.StringType)
+    res.AllowedSourceAddresses = convertStringList(ctx, dto.AllowedSourceAddresses, types.StringType)
 
-	if dto.AllowedSourceAddresses != nil && len(*dto.AllowedSourceAddresses) > 0 {
-		allowedSourceAddresses, _ := types.ListValueFrom(ctx, types.StringType, dto.AllowedSourceAddresses)
-		res.AllowedSourceAddresses = allowedSourceAddresses
-	} else {
-		res.AllowedSourceAddresses = types.ListNull(types.StringType)
-	}
 
 	if dto.AllowedPortRanges != nil {
 		var objects []attr.Value
@@ -845,15 +866,10 @@ func (dto *HostConfigDTO) ConvertToZitiResourceModel(ctx context.Context) ZitiHo
 	}
 
 	if dto.ListenOptions != nil {
-		tflog.Info(ctx, "UPDATING LISTEN OPTIONS")
 		listenOptionsObject, _ := JsonStructToObject(ctx, *dto.ListenOptions, true, false)
 		listenOptionsObject = convertKeysToSnake(listenOptionsObject)
-		jsonObj, _ := json.Marshal(listenOptionsObject)
-		tflog.Info(ctx, string(jsonObj))
 
 		listenOptionsMap := NativeBasicTypedAttributesToTerraform(ctx, listenOptionsObject, ListenOptionsModel.AttrTypes)
-		jsonObj, _ = json.Marshal(listenOptionsMap)
-		tflog.Info(ctx, string(jsonObj))
 
 		listenOptionsTf, err := basetypes.NewObjectValue(ListenOptionsModel.AttrTypes, listenOptionsMap)
 		if err != nil {
@@ -864,126 +880,20 @@ func (dto *HostConfigDTO) ConvertToZitiResourceModel(ctx context.Context) ZitiHo
 	} else {
 		res.ListenOptions = types.ObjectNull(ListenOptionsModel.AttrTypes)
 	}
-	if dto.HTTPChecks != nil {
-		tflog.Info(ctx, "CONVERTING HTTP CHECKS")
-		var objects []attr.Value
-		for _, httpCheck := range *dto.HTTPChecks {
-			httpCheckObject, _ := JsonStructToObject(ctx, httpCheck, true, false)
-			httpCheckObject = convertKeysToSnake(httpCheckObject)
-			delete(httpCheckObject, "actions")
-			httpCheckMap := NativeBasicTypedAttributesToTerraform(ctx, httpCheckObject, HTTPCheckModel.AttrTypes)
 
-			var actions []attr.Value
-			for _, item := range *httpCheck.Actions {
+    if dto.HTTPChecks != nil {
+        res.HTTPChecks = convertChecksToTerraformList(ctx, *dto.HTTPChecks, HTTPCheckModel.AttrTypes, HTTPCheckModel)
+    } else {
+        res.HTTPChecks = types.ListNull(HTTPCheckModel)
 
-				actionObject, _ := JsonStructToObject(ctx, item, true, false)
-				actionObject = convertKeysToSnake(actionObject)
-
-				actionMap := NativeBasicTypedAttributesToTerraform(ctx, actionObject, CheckActionModel.AttrTypes)
-
-				actionTf, err := basetypes.NewObjectValue(CheckActionModel.AttrTypes, actionMap)
-				if err != nil {
-					oneerr := err[0]
-					tflog.Info(ctx, "Error converting actionMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
-
-				}
-				actions = append(actions, actionTf)
-			}
-
-			actionsList, err := types.ListValueFrom(ctx, CheckActionModel, actions)
-			if err != nil {
-				tflog.Info(ctx, "Error converting an array of actions to a list")
-
-			}
-			httpCheckMap["actions"] = actionsList
-
-			httpCheckTf, err := basetypes.NewObjectValue(HTTPCheckModel.AttrTypes, httpCheckMap)
-			if err != nil {
-				tflog.Info(ctx, "Error converting httpCheckMap to ObjectValue")
-			}
-
-			jsonObj, _ := json.Marshal(httpCheckObject)
-			tflog.Info(ctx, string(jsonObj))
-
-			jsonObj, _ = json.Marshal(httpCheckMap)
-			tflog.Info(ctx, string(jsonObj))
-
-			jsonObj, _ = json.Marshal(httpCheckTf)
-			tflog.Info(ctx, string(jsonObj))
-
-			objects = append(objects, httpCheckTf)
-		}
-
-		httpChecks, _ := types.ListValueFrom(ctx, HTTPCheckModel, objects)
-		for _, httpCheck := range httpChecks.Elements() {
-			jsonObj, _ := json.Marshal(httpCheck)
-			tflog.Info(ctx, string(jsonObj))
-
-		}
-		res.HTTPChecks = httpChecks
-	} else {
-		res.HTTPChecks = types.ListNull(HTTPCheckModel)
-	}
-	if dto.PortChecks != nil {
-		tflog.Info(ctx, "CONVERTING PORT CHECKS")
-		var objects []attr.Value
-		for _, portCheck := range *dto.PortChecks {
-			portCheckObject, _ := JsonStructToObject(ctx, portCheck, true, false)
-			portCheckObject = convertKeysToSnake(portCheckObject)
-			delete(portCheckObject, "actions")
-			portCheckMap := NativeBasicTypedAttributesToTerraform(ctx, portCheckObject, PortCheckModel.AttrTypes)
-
-			var actions []attr.Value
-			for _, item := range *portCheck.Actions {
-
-				actionObject, _ := JsonStructToObject(ctx, item, true, false)
-				actionObject = convertKeysToSnake(actionObject)
-
-				actionMap := NativeBasicTypedAttributesToTerraform(ctx, actionObject, CheckActionModel.AttrTypes)
-
-				actionTf, err := basetypes.NewObjectValue(CheckActionModel.AttrTypes, actionMap)
-				if err != nil {
-					oneerr := err[0]
-					tflog.Info(ctx, "Error converting actionMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
-
-				}
-				actions = append(actions, actionTf)
-			}
-
-			actionsList, err := types.ListValueFrom(ctx, CheckActionModel, actions)
-			if err != nil {
-				tflog.Info(ctx, "Error converting an array of actions to a list")
-
-			}
-			portCheckMap["actions"] = actionsList
-
-			portCheckTf, err := basetypes.NewObjectValue(PortCheckModel.AttrTypes, portCheckMap)
-			if err != nil {
-				tflog.Info(ctx, "Error converting portCheckMap to ObjectValue")
-			}
-
-			jsonObj, _ := json.Marshal(portCheckObject)
-			tflog.Info(ctx, string(jsonObj))
-
-			jsonObj, _ = json.Marshal(portCheckMap)
-			tflog.Info(ctx, string(jsonObj))
-
-			jsonObj, _ = json.Marshal(portCheckTf)
-			tflog.Info(ctx, string(jsonObj))
-
-			objects = append(objects, portCheckTf)
-		}
-
-		portChecks, _ := types.ListValueFrom(ctx, PortCheckModel, objects)
-		for _, portCheck := range portChecks.Elements() {
-			jsonObj, _ := json.Marshal(portCheck)
-			tflog.Info(ctx, string(jsonObj))
-
-		}
-		res.PortChecks = portChecks
-	} else {
-		res.PortChecks = types.ListNull(PortCheckModel)
-	}
+    }
+    
+    if dto.PortChecks != nil {
+        res.PortChecks = convertChecksToTerraformList(ctx, *dto.PortChecks, PortCheckModel.AttrTypes, PortCheckModel)
+    } else {
+        res.PortChecks = types.ListNull(PortCheckModel)
+    }
+	
 
 	return res
 }
@@ -993,29 +903,17 @@ func (r *ZitiHostConfigResourceModel) ToHostConfigDTO(ctx context.Context) HostC
 	var portChecks []PortCheckDTO
 	for _, v := range r.PortChecks.Elements() {
 		if v, ok := v.(types.Object); ok {
-			portCheck := AttributesToPortChecksStruct(ctx, v.Attributes())
+            portCheck := AttributesToStruct[PortCheckDTO](v.Attributes())
 			portChecks = append(portChecks, portCheck)
 		}
 	}
 	var httpChecks []HTTPCheckDTO
 	for _, v := range r.HTTPChecks.Elements() {
 		if v, ok := v.(types.Object); ok {
-			httpCheck := AttributesToHTTPChecksStruct(ctx, v.Attributes())
+            httpCheck := AttributesToStruct[HTTPCheckDTO](v.Attributes())
 			httpChecks = append(httpChecks, httpCheck)
 		}
 	}
-
-	tflog.Info(ctx, "PORT CHECKS ARRAY TOHOSTCONFIGDTO")
-	jsonObj, _ := json.Marshal(portChecks)
-	tflog.Info(ctx, string(jsonObj))
-
-	tflog.Info(ctx, "HTTP CHECKS ARRAY TOHOSTCONFIGDTO")
-	jsonObj, _ = json.Marshal(httpChecks)
-	tflog.Info(ctx, string(jsonObj))
-
-	tflog.Info(ctx, "LISTEN OPTIONS TOHOSTCONFIGDTO")
-	jsonObj, _ = json.Marshal(listenOptions)
-	tflog.Info(ctx, string(jsonObj))
 
 	hostConfigDto := HostConfigDTO{
 		Address:       r.Address.ValueStringPointer(),
@@ -1023,32 +921,16 @@ func (r *ZitiHostConfigResourceModel) ToHostConfigDTO(ctx context.Context) HostC
 		ListenOptions: &listenOptions,
 		PortChecks:    &portChecks,
 		HTTPChecks:    &httpChecks,
+        ForwardAddress: r.ForwardAddress.ValueBoolPointer(),
+        ForwardPort: r.ForwardPort.ValueBoolPointer(),
+        ForwardProtocol: r.ForwardProtocol.ValueBoolPointer(),
+        Port:   r.Port.ValueInt32Pointer(),
+        AllowedProtocols: ElementsToStringArray(r.AllowedProtocols.Elements()),
+        AllowedAddresses: ElementsToStringArray(r.AllowedAddresses.Elements()),
+        AllowedSourceAddresses: ElementsToStringArray(r.AllowedSourceAddresses.Elements()),
 	}
 
-	if r.ForwardAddress.ValueBool() {
-		hostConfigDto.ForwardAddress = r.ForwardAddress.ValueBoolPointer()
-	}
-	if r.ForwardPort.ValueBool() {
-		hostConfigDto.ForwardPort = r.ForwardPort.ValueBoolPointer()
-	}
-	if r.ForwardProtocol.ValueBool() {
-		hostConfigDto.ForwardProtocol = r.ForwardProtocol.ValueBoolPointer()
-	}
-	if r.Port.ValueInt32() > 0 {
-		hostConfigDto.Port = r.Port.ValueInt32Pointer()
-	}
-	if len(r.AllowedProtocols.Elements()) > 0 {
-		allowedProtocols := ElementsToStringArray(r.AllowedProtocols.Elements())
-		hostConfigDto.AllowedProtocols = &allowedProtocols
-	}
-	if len(r.AllowedAddresses.Elements()) > 0 {
-		allowedAddresses := ElementsToStringArray(r.AllowedAddresses.Elements())
-		hostConfigDto.AllowedAddresses = &allowedAddresses
-	}
-	if len(r.AllowedSourceAddresses.Elements()) > 0 {
-		allowedSourceAddresses := ElementsToStringArray(r.AllowedSourceAddresses.Elements())
-		hostConfigDto.AllowedSourceAddresses = &allowedSourceAddresses
-	}
+
 	if len(r.AllowedPortRanges.Elements()) > 0 {
 		allowedPortRanges := ElementsToListOfStructs(ctx, r.AllowedPortRanges.Elements())
 		hostConfigDto.AllowedPortRanges = &allowedPortRanges
