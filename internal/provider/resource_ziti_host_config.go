@@ -9,14 +9,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -24,14 +22,14 @@ import (
 	//"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/iancoleman/strcase"
 	"github.com/openziti/edge-api/rest_management_api_client/config"
 	"github.com/openziti/edge-api/rest_model"
 	"github.com/openziti/edge-api/rest_util"
@@ -454,41 +452,6 @@ func (r *ZitiHostConfigResource) Configure(ctx context.Context, req resource.Con
 	r.client = client
 }
 
-func convertKeysToCamel(mapData map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for key, value := range mapData {
-		result[strcase.ToLowerCamel(key)] = value
-	}
-	return result
-
-}
-
-func convertKeysToSnake(mapData map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for key, value := range mapData {
-		result[strcase.ToSnake(key)] = value
-	}
-	return result
-
-}
-func extractAndValidateString(mapData map[string]interface{}, key string, diag *diag.Diagnostics) types.String {
-	if val, exists := mapData[key]; exists {
-		if strVal, ok := val.(string); ok {
-			return types.StringValue(strVal)
-		} else {
-			diag.AddError(
-				"Invalid Type",
-				fmt.Sprintf("%s expected to be string, got: %T", key, val),
-			)
-		}
-	}
-	return types.StringNull() // Fallback if value does not exist.
-}
-
-func IsZero[T comparable](v T) bool {
-	return v == *new(T)
-}
-
 type HostConfigAllowedPortsDTO struct {
 	Low  int32 `json:"low,omitempty"`
 	High int32 `json:"high,omitempty"`
@@ -543,76 +506,7 @@ type HostConfigDTO struct {
 	PortChecks             *[]PortCheckDTO              `json:"portChecks,omitempty"`
 }
 
-func ElementsToStringArray(elements []attr.Value) *[]string {
-	if len(elements) != 0 {
-		elementsArray := []string{}
-		for _, v := range elements {
-			if val, ok := v.(types.String); ok {
-				elementsArray = append(elementsArray, val.ValueString())
-			}
-		}
-		return &elementsArray
-	}
-	return nil
-}
 
-func AttributesToNativeTypes(attrs map[string]attr.Value) map[string]interface{} {
-	result := make(map[string]interface{})
-	for key, value := range attrs {
-		if val, ok := value.(types.String); ok {
-			result[key] = val.ValueString()
-		} else if val, ok := value.(types.Int32); ok {
-			result[key] = val.ValueInt32()
-		} else if val, ok := value.(types.Bool); ok {
-			result[key] = val.ValueBool()
-		}
-	}
-	return result
-
-}
-
-func NativeBasicTypedAttributesToTerraform(ctx context.Context, attrs map[string]interface{}, attrTypes map[string]attr.Type) map[string]attr.Value {
-	result := make(map[string]attr.Value)
-
-	for targetAttrName, targetAttrType := range attrTypes {
-		value, _ := attrs[targetAttrName]
-		if targetAttrType == types.StringType {
-			if value == nil {
-				result[targetAttrName] = types.StringNull()
-			} else if val, ok := value.(string); ok {
-				result[targetAttrName] = types.StringValue(val)
-			} else if val, ok := value.(*string); ok {
-				result[targetAttrName] = types.StringPointerValue(val)
-			} else {
-				tflog.Info(ctx, "Could not convert "+targetAttrName+" to "+targetAttrType.String())
-			}
-		} else if targetAttrType == types.Int32Type {
-			if value == nil {
-				result[targetAttrName] = types.Int32Null()
-			} else if val, ok := value.(int32); ok {
-				result[targetAttrName] = types.Int32Value(val)
-			} else if val, ok := value.(*int32); ok {
-				result[targetAttrName] = types.Int32PointerValue(val)
-			} else {
-				tflog.Info(ctx, "Could not convert "+targetAttrName+" to "+targetAttrType.String())
-			}
-		} else if targetAttrType == types.BoolType {
-			if value == nil {
-				result[targetAttrName] = types.BoolNull()
-			} else if val, ok := value.(bool); ok {
-				result[targetAttrName] = types.BoolValue(val)
-			} else if val, ok := value.(*bool); ok {
-				result[targetAttrName] = types.BoolPointerValue(val)
-			} else {
-				tflog.Info(ctx, "Could not convert "+targetAttrName+" to "+targetAttrType.String())
-			}
-		}
-
-	}
-
-	return result
-
-}
 
 func AttributesToListenOptionsStruct(attr map[string]attr.Value) ListenOptionsDTO {
 	var listenOptions ListenOptionsDTO
@@ -678,99 +572,8 @@ func ElementsToListOfStructs(ctx context.Context, elements []attr.Value) []HostC
 	return []HostConfigAllowedPortsDTO{}
 }
 
-func JsonStructToObject(ctx context.Context, s interface{}, makeZeroNil bool, ignoreZero bool) (map[string]interface{}, error) {
-	result := make(map[string]interface{})
 
-	val := reflect.ValueOf(s)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if val.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("expected struct, got %s", val.Kind())
-	}
 
-	typ := val.Type()
-	for i := 0; i < val.NumField(); i++ {
-
-		field := val.Field(i)
-		fieldType := typ.Field(i)
-
-		// Get the json tag
-		jsonTag := fieldType.Tag.Get("json")
-		if jsonTag == "" {
-			continue // Ignore fields without a tag
-		}
-		// Check for omitempty
-		tagParts := strings.Split(jsonTag, ",")
-		key := tagParts[0] // The first part is the key
-
-		if field.Kind() == reflect.Ptr {
-			if field.IsNil() {
-				if ignoreZero {
-					continue // Skip nil pointer fields when makeZeroNil is true
-				}
-				result[key] = nil
-				continue
-			}
-			field = field.Elem()
-		}
-		fieldValue := field.Interface()
-
-		tflog.Info(ctx, "KIND OF "+key+" is "+field.Kind().String())
-		isEmptyValue := field.IsZero() && field.Kind() != reflect.Int32
-		if makeZeroNil && isEmptyValue {
-			fieldValue = nil
-		}
-
-		isEmptySlice := field.Kind() == reflect.Slice && field.Len() == 0
-		if makeZeroNil && isEmptySlice {
-			fieldValue = nil
-		}
-
-		if ignoreZero && (isEmptyValue || isEmptySlice) {
-			continue
-		}
-		// Handle nested structs
-		if field.Kind() == reflect.Struct || (field.Kind() == reflect.Ptr && field.Elem().Kind() == reflect.Struct) {
-			nestedValue, err := JsonStructToObject(ctx, field.Interface(), makeZeroNil, ignoreZero)
-			if err != nil {
-				return nil, err
-			}
-			fieldValue = nestedValue
-		}
-
-		result[key] = fieldValue // Use the actual field value
-	}
-
-	return result, nil
-
-}
-
-func GenericFromObject[T any](mapData map[string]interface{}, dto *T) error {
-	// Marshal the map to JSON
-	data, err := json.Marshal(mapData)
-	if err != nil {
-		return err
-	}
-
-	// Unmarshal the JSON into the provided dto
-	if err := json.Unmarshal(data, &dto); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func convertStringList(ctx context.Context, list *[]string, elemType attr.Type) (types.List) {
-    var result types.List
-
-	if list != nil && len(*list) > 0 {
-		result, _ = types.ListValueFrom(ctx, elemType, list)
-	} else {
-		result = types.ListNull(elemType)
-	}
-	return result
-}
 
 func convertCheckActionToTerraformList(ctx context.Context, actions *[]CheckActionDTO) (types.List, diag.Diagnostics) {
     var actionsTf []attr.Value
@@ -784,7 +587,7 @@ func convertCheckActionToTerraformList(ctx context.Context, actions *[]CheckActi
         actionTf, err := basetypes.NewObjectValue(CheckActionModel.AttrTypes, actionMap)
         if err != nil {
             oneerr := err[0]
-            tflog.Info(ctx, "Error converting actionMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
+            tflog.Debug(ctx, "Error converting actionMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
 
         }
         actionsTf = append(actionsTf, actionTf)
@@ -814,13 +617,13 @@ func convertChecksToTerraformList(ctx context.Context, checks interface{}, model
         if actions, ok := actionsValue.(*[]CheckActionDTO); ok {
             actionsList, err := convertCheckActionToTerraformList(ctx, actions)
             if err != nil {
-                tflog.Info(ctx, "Error converting an array of actions to a list")
+                tflog.Debug(ctx, "Error converting an array of actions to a list")
             }
             checkMap["actions"] = actionsList
 
             checkTf, err := basetypes.NewObjectValue(modelAttrs, checkMap)
             if err != nil {
-                tflog.Info(ctx, "Error converting checkMap to ObjectValue")
+                tflog.Debug(ctx, "Error converting checkMap to ObjectValue")
             }
 
             objects = append(objects, checkTf)
@@ -874,7 +677,7 @@ func (dto *HostConfigDTO) ConvertToZitiResourceModel(ctx context.Context) ZitiHo
 		listenOptionsTf, err := basetypes.NewObjectValue(ListenOptionsModel.AttrTypes, listenOptionsMap)
 		if err != nil {
 			oneerr := err[0]
-			tflog.Info(ctx, "Error converting listenOptionsMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
+			tflog.Debug(ctx, "Error converting listenOptionsMap to an object: "+oneerr.Summary()+" | "+oneerr.Detail())
 		}
 		res.ListenOptions = listenOptionsTf
 	} else {
@@ -967,7 +770,7 @@ func (r *ZitiHostConfigResource) Create(ctx context.Context, req resource.Create
 	}
 
 	jsonObj, _ := json.Marshal(requestObject)
-	tflog.Info(ctx, string(jsonObj))
+	tflog.Debug(ctx, string(jsonObj))
 
 	name := plan.Name.ValueString()
 	configTypeId := plan.ConfigTypeId.ValueString()
@@ -979,7 +782,7 @@ func (r *ZitiHostConfigResource) Create(ctx context.Context, req resource.Create
 	params := config.NewCreateConfigParams()
 	params.Config = &configCreate
 
-	tflog.Info(ctx, "Assigned all the params. Making CreateConfig req")
+	tflog.Debug(ctx, "Assigned all the params. Making CreateConfig req")
 
 	data, err := r.client.API.Config.CreateConfig(params, nil)
 	if err != nil {
@@ -1003,7 +806,7 @@ func (r *ZitiHostConfigResource) Create(ctx context.Context, req resource.Create
 func (r *ZitiHostConfigResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ZitiHostConfigResourceModel
 
-	tflog.Info(ctx, "Reading Ziti config")
+	tflog.Debug(ctx, "Reading Ziti config")
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -1029,7 +832,7 @@ func (r *ZitiHostConfigResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	tflog.Info(ctx, "Got response from detail ziti config")
+	tflog.Debug(ctx, "Got response from detail ziti config")
 	responseData, ok := data.Payload.Data.Data.(map[string]interface{})
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -1048,8 +851,8 @@ func (r *ZitiHostConfigResource) Read(ctx context.Context, req resource.ReadRequ
 	newState := hostConfigDto.ConvertToZitiResourceModel(ctx)
 
 	jsonObj, _ := json.Marshal(hostConfigDto)
-	tflog.Info(ctx, "RESPONSE DETAIL")
-	tflog.Info(ctx, string(jsonObj))
+	tflog.Debug(ctx, "RESPONSE DETAIL")
+	tflog.Debug(ctx, string(jsonObj))
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -1068,7 +871,7 @@ func (r *ZitiHostConfigResource) Read(ctx context.Context, req resource.ReadRequ
 func (r *ZitiHostConfigResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan ZitiHostConfigResourceModel
 
-	tflog.Info(ctx, "Updating Ziti config")
+	tflog.Debug(ctx, "Updating Ziti config")
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -1086,8 +889,8 @@ func (r *ZitiHostConfigResource) Update(ctx context.Context, req resource.Update
 	}
 
 	jsonObj, _ := json.Marshal(requestObject)
-	tflog.Info(ctx, "UPDATE REQUEST OBJECT")
-	tflog.Info(ctx, string(jsonObj))
+	tflog.Debug(ctx, "UPDATE REQUEST OBJECT")
+	tflog.Debug(ctx, string(jsonObj))
 
 	name := plan.Name.ValueString()
 	configUpdate := rest_model.ConfigUpdate{
@@ -1115,7 +918,7 @@ func (r *ZitiHostConfigResource) Update(ctx context.Context, req resource.Update
 func (r *ZitiHostConfigResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var plan ZitiHostConfigResourceModel
 
-	tflog.Info(ctx, "Deleting Ziti config")
+	tflog.Debug(ctx, "Deleting Ziti config")
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
 

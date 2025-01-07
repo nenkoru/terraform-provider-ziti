@@ -198,3 +198,19 @@ resource "ziti_host_config_v1" "forward_port_protocol_address_allowed_addresses_
         }
     ]
 }
+
+data "ziti_host_config_v1" "test_reference_configs" {
+    most_recent = true
+    filter = "name contains \"v1\""
+
+}
+
+data "ziti_host_config_v1" "test_reference_by_name" {
+    name = ziti_host_config_v1.simple_host.name
+
+}
+
+data "ziti_host_config_v1_ids" "test_config_ids" {
+    filter = "name contains \"v1\""
+
+}

@@ -293,7 +293,8 @@ func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource
 
 func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewExampleDataSource,
+		NewZitiHostConfigDataSource,
+		NewZitiHostConfigIdsDataSource,
 	}
 }
 
