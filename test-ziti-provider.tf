@@ -212,7 +212,6 @@ data "ziti_host_config_v1" "test_reference_by_name" {
 
 data "ziti_host_config_v1_ids" "test_config_ids" {
     filter = "name contains \"v1\""
-
 }
 
 resource "ziti_service" "test_service" {
@@ -220,7 +219,27 @@ resource "ziti_service" "test_service" {
     configs = [ziti_host_config_v1.forward_protocol_host.id]
 }
 
-resource "ziti_service" "test_service_configs" {
-    name = "test_service_configs"
-    configs = data.ziti_host_config_v1_ids.test_config_ids.ids
+resource "ziti_intercept_config_v1" "simple_intercept" {
+    name = "simple_intercept.intercept.v1"
+
+    addresses = ["localhost"]
+    protocols = ["tcp", "udp"]
+    port_ranges = [
+        {
+            low = 80
+            high = 443
+        }
+    ]
+}
+
+data "ziti_intercept_config_v1" "test_intercept_reference_configs" {
+    most_recent = true
+    filter = "name contains \"v1\""
+}
+
+data "ziti_intercept_config_v1" "test_intercept_reference_by_name" {
+    name = ziti_intercept_config_v1.simple_intercept.name
+}
+data "ziti_intercept_config_v1_ids" "test_intercept_config_ids" {
+    filter = "name contains \"v1\""
 }

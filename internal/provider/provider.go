@@ -288,6 +288,7 @@ func (p *ZitiProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewZitiHostConfigResource,
+		NewZitiInterceptConfigResource,
         NewZitiServiceResource,
 	}
 }
@@ -296,6 +297,9 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 	return []func() datasource.DataSource{
 		NewZitiHostConfigDataSource,
 		NewZitiHostConfigIdsDataSource,
+
+        NewZitiInterceptConfigDataSource,
+		NewZitiInterceptConfigIdsDataSource,
 	}
 }
 

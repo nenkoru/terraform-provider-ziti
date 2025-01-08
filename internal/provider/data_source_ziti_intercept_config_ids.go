@@ -16,32 +16,32 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &ZitiHostConfigIdsDataSource{}
+var _ datasource.DataSource = &ZitiInterceptConfigIdsDataSource{}
 
-func NewZitiHostConfigIdsDataSource() datasource.DataSource {
-	return &ZitiHostConfigIdsDataSource{}
+func NewZitiInterceptConfigIdsDataSource() datasource.DataSource {
+	return &ZitiInterceptConfigIdsDataSource{}
 }
 
-// ZitiHostConfigIdsDataSource defines the data source implementation.
-type ZitiHostConfigIdsDataSource struct {
+// ZitiInterceptConfigIdsDataSource defines the data source implementation.
+type ZitiInterceptConfigIdsDataSource struct {
 	client *edge_apis.ManagementApiClient
 }
 
-// ZitiHostConfigIdsDataSourceModel describes the data source data model.
-type ZitiHostConfigIdsDataSourceModel struct {
+// ZitiInterceptConfigIdsDataSourceModel describes the data source data model.
+type ZitiInterceptConfigIdsDataSourceModel struct {
 	Filter                    types.String `tfsdk:"filter"`
 
     IDS     types.List  `tfsdk:"ids"`
 }
 
-func (d *ZitiHostConfigIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_host_config_v1_ids"
+func (d *ZitiInterceptConfigIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_intercept_config_v1_ids"
 }
 
-func (d *ZitiHostConfigIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ZitiInterceptConfigIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Ziti Host Config Data Source",
+		MarkdownDescription: "Ziti Intercept Config Data Source",
 
 		Attributes: map[string]schema.Attribute{
 			"filter": schema.StringAttribute{
@@ -58,7 +58,7 @@ func (d *ZitiHostConfigIdsDataSource) Schema(ctx context.Context, req datasource
 	}
 }
 
-func (r *ZitiHostConfigIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (r *ZitiInterceptConfigIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -79,8 +79,8 @@ func (r *ZitiHostConfigIdsDataSource) Configure(ctx context.Context, req datasou
 }
 
 
-func (d *ZitiHostConfigIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state ZitiHostConfigIdsDataSourceModel
+func (d *ZitiInterceptConfigIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state ZitiInterceptConfigIdsDataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -97,7 +97,7 @@ func (d *ZitiHostConfigIdsDataSource) Read(ctx context.Context, req datasource.R
     params.Offset = &offset
 
     filter := state.Filter.ValueString()
-    filter = filter + " and type = \"NH5p4FpGR\"" //host.v1 config
+    filter = filter + " and type = \"g7cIWbcGg\"" //host.v1 config
     params.Filter = &filter
 
     data, err := d.client.API.Config.ListConfigs(params, nil)

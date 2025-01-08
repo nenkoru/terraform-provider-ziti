@@ -452,7 +452,7 @@ func (r *ZitiHostConfigResource) Configure(ctx context.Context, req resource.Con
 	r.client = client
 }
 
-type HostConfigAllowedPortsDTO struct {
+type ConfigPortsDTO struct {
 	Low  int32 `json:"low,omitempty"`
 	High int32 `json:"high,omitempty"`
 }
@@ -500,7 +500,7 @@ type HostConfigDTO struct {
 	AllowedProtocols       *[]string                    `json:"allowedProtocols,omitempty"`
 	AllowedAddresses       *[]string                    `json:"allowedAddresses,omitempty"`
 	AllowedSourceAddresses *[]string                    `json:"allowedSourceAddresses,omitempty"`
-	AllowedPortRanges      *[]HostConfigAllowedPortsDTO `json:"allowedPortRanges,omitempty"`
+	AllowedPortRanges      *[]ConfigPortsDTO `json:"allowedPortRanges,omitempty"`
 	ListenOptions          *ListenOptionsDTO            `json:"listenOptions,omitempty"`
 	HTTPChecks             *[]HTTPCheckDTO              `json:"httpChecks,omitempty"`
 	PortChecks             *[]PortCheckDTO              `json:"portChecks,omitempty"`
@@ -556,11 +556,11 @@ func AttributesToStruct[T any](attr map[string]attr.Value)  T {
 }
 
 
-func ElementsToListOfStructs(ctx context.Context, elements []attr.Value) []HostConfigAllowedPortsDTO {
+func ElementsToListOfStructs(ctx context.Context, elements []attr.Value) []ConfigPortsDTO {
 	if len(elements) != 0 {
-		elementsArray := []HostConfigAllowedPortsDTO{}
+		elementsArray := []ConfigPortsDTO{}
 		for _, v := range elements {
-			var hostConfigAllowedPorts HostConfigAllowedPortsDTO
+			var hostConfigAllowedPorts ConfigPortsDTO
 			if val, ok := v.(types.Object); ok {
 				attrsNative := AttributesToNativeTypes(val.Attributes())
 				GenericFromObject(attrsNative, &hostConfigAllowedPorts)
@@ -569,7 +569,7 @@ func ElementsToListOfStructs(ctx context.Context, elements []attr.Value) []HostC
 		}
 		return elementsArray
 	}
-	return []HostConfigAllowedPortsDTO{}
+	return []ConfigPortsDTO{}
 }
 
 
