@@ -321,14 +321,14 @@ func (d *ZitiHostConfigDataSource) Read(ctx context.Context, req datasource.Read
     filter := ""
     if state.ID.ValueString() != "" {
         filter = "id = \"" + state.ID.ValueString() + "\""
-        params.Filter = &filter
     } else if state.Name.ValueString() != "" {
         filter = "name = \"" + state.Name.ValueString() + "\""
-        params.Filter = &filter
     } else {
         filter = state.Filter.ValueString()
-        params.Filter = &filter
     }
+
+    filter = filter + " and type = \"NH5p4FpGR\"" //host.v1 config
+    params.Filter = &filter
     data, err := d.client.API.Config.ListConfigs(params, nil)
     if err != nil {
 		err = rest_util.WrapErr(err)

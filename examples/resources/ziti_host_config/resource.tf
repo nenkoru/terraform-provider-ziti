@@ -1,17 +1,3 @@
-terraform {
-  required_providers {
-    ziti = {
-      source = "nenkoru/ziti"
-    }
-  }
-}
-
-provider "ziti" {
-  username            = "testadmin"
-  password        = "testadmin"
-  mgmt_endpoint            = "https://localhost:1280/edge/management/v1"
-}
-
 resource "ziti_host_config_v1" "simple_host" {
     name = "simple_host.host.v1"
     address = "localhost"
@@ -197,30 +183,4 @@ resource "ziti_host_config_v1" "forward_port_protocol_address_allowed_addresses_
             high = 443
         }
     ]
-}
-
-data "ziti_host_config_v1" "test_reference_configs" {
-    most_recent = true
-    filter = "name contains \"v1\""
-
-}
-
-data "ziti_host_config_v1" "test_reference_by_name" {
-    name = ziti_host_config_v1.simple_host.name
-
-}
-
-data "ziti_host_config_v1_ids" "test_config_ids" {
-    filter = "name contains \"v1\""
-
-}
-
-resource "ziti_service" "test_service" {
-    name = "test_service"
-    configs = [ziti_host_config_v1.forward_protocol_host.id]
-}
-
-resource "ziti_service" "test_service_configs" {
-    name = "test_service_configs"
-    configs = data.ziti_host_config_v1_ids.test_config_ids.ids
 }

@@ -909,9 +909,11 @@ func (r *ZitiHostConfigResource) Update(ctx context.Context, req resource.Update
 			"Error Updating Ziti Config from API",
 			"Could not update Ziti Config "+plan.ID.ValueString()+": "+err.Error(),
 		)
-		return
 	}
 
+    if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -939,6 +941,7 @@ func (r *ZitiHostConfigResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
+    resp.State.RemoveResource(ctx)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
