@@ -300,13 +300,13 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 
         NewZitiInterceptConfigDataSource,
 		NewZitiInterceptConfigIdsDataSource,
+
+        NewZitiServiceDataSource,
 	}
 }
 
 func (p *ZitiProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewExampleFunction,
-	}
+	return []func() function.Function{}
 }
 
 func New(version string) func() provider.Provider {

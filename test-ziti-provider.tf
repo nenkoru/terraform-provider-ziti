@@ -240,6 +240,13 @@ data "ziti_intercept_config_v1" "test_intercept_reference_configs" {
 data "ziti_intercept_config_v1" "test_intercept_reference_by_name" {
     name = ziti_intercept_config_v1.simple_intercept.name
 }
+
 data "ziti_intercept_config_v1_ids" "test_intercept_config_ids" {
     filter = "name contains \"v1\""
+}
+
+data "ziti_service" "test_data_ziti_service" {
+    most_recent = true
+    filter = "name = \"test_service\""
+
 }
