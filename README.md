@@ -29,7 +29,7 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 | ext-jwt-signer            | ❌                   | ❌                  |
 | identity                  | ❌                   | ❌                  |
 | posture-check             | ❌                   | ❌                  |
-| service                   | ❌                   | ✅                  |
+| service                   | ✅                   | ✅                  |
 | service-edge-router-policy| ❌                   | ❌                  |
 | service-policy            | ❌                   | ❌                  |
 | terminator                | ❌                   | ❌                  |
