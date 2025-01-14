@@ -211,6 +211,7 @@ func (r *ZitiIdentityResource) Create(ctx context.Context, req resource.CreateRe
     defaultHostingPrecedence := rest_model.TerminatorPrecedence(plan.DefaultHostingPrecedence.ValueString())
     externalId := plan.ExternalID.ValueString()
     isAdmin := plan.IsAdmin.ValueBool()
+
     serviceHostingCosts := make(rest_model.TerminatorCostMap)
     for key, value := range AttributesToNativeTypes(plan.ServiceHostingCosts.Elements()) {
         if val, ok := value.(int64); ok {
@@ -306,8 +307,6 @@ func (r *ZitiIdentityResource) Read(ctx context.Context, req resource.ReadReques
     state.AuthPolicyID = types.StringValue(*data.Payload.Data.AuthPolicyID)
     state.DefaultHostingCost = types.Int64Value(int64(*data.Payload.Data.DefaultHostingCost))
     state.DefaultHostingPrecedence = types.StringValue(string(data.Payload.Data.DefaultHostingPrecedence))
-
-
 
     if data.Payload.Data.ExternalID != nil {
         state.ExternalID = types.StringValue(*data.Payload.Data.ExternalID)

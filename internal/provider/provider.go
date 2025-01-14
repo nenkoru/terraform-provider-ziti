@@ -304,6 +304,9 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 
         NewZitiServiceDataSource,
         NewZitiServiceIdsDataSource,
+
+        NewZitiIdentityDataSource,
+        NewZitiIdentityIdsDataSource,
 	}
 }
 

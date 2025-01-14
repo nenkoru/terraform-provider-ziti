@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/openziti/sdk-golang/edge-apis"
 	"github.com/openziti/edge-api/rest_management_api_client/config"
@@ -39,23 +38,7 @@ func (d *ZitiHostConfigIdsDataSource) Metadata(ctx context.Context, req datasour
 }
 
 func (d *ZitiHostConfigIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Ziti Host Config Data Source",
-
-		Attributes: map[string]schema.Attribute{
-			"filter": schema.StringAttribute{
-				MarkdownDescription: "ZitiQl filter query",
-				Required:            true,
-			},
-
-            "ids": schema.ListAttribute{
-				ElementType:         types.StringType,
-				MarkdownDescription: "An array of allowed addresses that could be forwarded.",
-				Computed:            true,
-			},
-		},
-	}
+    resp.Schema = CommonIdsDataSourceSchema
 }
 
 func (r *ZitiHostConfigIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

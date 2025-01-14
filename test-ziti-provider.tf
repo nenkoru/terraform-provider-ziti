@@ -242,7 +242,7 @@ resource "ziti_identity" "test_ziti_identity" {
     }
     role_attributes = ["test"]
     service_hosting_costs = {
-        "3kJOVK9NNIq0lfQvJJrsi4" = 10
+        "${ziti_service.test_service.id}" = 10
     }
 
 data "ziti_intercept_config_v1_ids" "test_intercept_config_ids" {

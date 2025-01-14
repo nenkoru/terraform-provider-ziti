@@ -889,8 +889,8 @@ func (r *ZitiHostConfigResource) Update(ctx context.Context, req resource.Update
 	}
 
 	jsonObj, _ := json.Marshal(requestObject)
-	tflog.Debug(ctx, "UPDATE REQUEST OBJECT")
-	tflog.Debug(ctx, string(jsonObj))
+	tflog.Info(ctx, "UPDATE REQUEST OBJECT")
+	tflog.Info(ctx, string(jsonObj))
 
 	name := plan.Name.ValueString()
 	configUpdate := rest_model.ConfigUpdate{

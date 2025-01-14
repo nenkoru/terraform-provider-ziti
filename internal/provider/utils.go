@@ -217,3 +217,4 @@ func TagsFromAttributes(mapData map[string]attr.Value) *rest_model.Tags {
     }
     return retTags
 }
+
