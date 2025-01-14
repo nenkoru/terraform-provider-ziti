@@ -30,7 +30,7 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 | identity                  | ✅                   | ✅                  |
 | posture-check             | ❌                   | ❌                  |
 | service                   | ✅                   | ✅                  |
-| service-edge-router-policy| ❌                   | ❌                  |
+| service-edge-router-policy| ✅                   | ✅                  |
 | service-policy            | ✅                   | ✅                  |
 | terminator                | ❌                   | ❌                  |
 | transit-router            | ❌                   | ❌                  |
