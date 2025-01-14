@@ -292,6 +292,7 @@ func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource
         NewZitiServiceResource,
         NewZitiIdentityResource,
         NewZitiServicePolicyResource,
+        NewZitiServiceEdgeRouterPolicyResource,
 	}
 }
 
@@ -311,6 +312,10 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 
         NewZitiServicePolicyDataSource,
         NewZitiServicePolicyIdsDataSource,
+
+        NewZitiServiceEdgeRouterPolicyDataSource,
+        NewZitiServiceEdgeRouterPolicyIdsDataSource,
+
 	}
 }
 

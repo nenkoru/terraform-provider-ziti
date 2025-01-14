@@ -260,3 +260,13 @@ resource "ziti_service_policy" "test_ziti_service_policy" {
     service_roles = ["@${ziti_service.test_service.id}"]
     posture_check_roles = ["#default"]
 }
+
+resource "ziti_service_edge_router_policy" "test_ziti_service_edge_router_policy" {
+    name = "test_ziti_service_edge_router_policy"
+    semantic = "AllOf"
+    tags = {
+        test_value = "test"
+    }
+    edge_router_roles = ["#all"]
+    service_roles = ["@${ziti_service.test_service.id}"]
+}
