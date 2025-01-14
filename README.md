@@ -21,10 +21,10 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 | auth-policy               | ❌                   | ❌                  |
 | authenticator             | ❌                   | ❌                  |
 | ca                        | ❌                   | ❌                  |
-| config                    | ✅                    | ✅                  |
+| config                    | ✅                   | ✅                  |
 | config-type               | ❌                   | ❌                  |
 | edge-router               | ❌                   | ❌                  |
-| edge-router-policy        | ❌                   | ❌                  |
+| edge-router-policy        | ✅                   | ✅                  |
 | enrollment                | ❌                   | ❌                  |
 | ext-jwt-signer            | ❌                   | ❌                  |
 | identity                  | ✅                   | ✅                  |
