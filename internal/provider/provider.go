@@ -291,6 +291,7 @@ func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewZitiInterceptConfigResource,
         NewZitiServiceResource,
         NewZitiIdentityResource,
+        NewZitiServicePolicyResource,
 	}
 }
 
@@ -307,6 +308,9 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 
         NewZitiIdentityDataSource,
         NewZitiIdentityIdsDataSource,
+
+        NewZitiServicePolicyDataSource,
+        NewZitiServicePolicyIdsDataSource,
 	}
 }
 

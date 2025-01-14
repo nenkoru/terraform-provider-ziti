@@ -244,13 +244,16 @@ resource "ziti_identity" "test_ziti_identity" {
     service_hosting_costs = {
         "${ziti_service.test_service.id}" = 10
     }
-
-data "ziti_intercept_config_v1_ids" "test_intercept_config_ids" {
-    filter = "name contains \"v1\""
 }
 
-data "ziti_service" "test_data_ziti_service" {
-    most_recent = true
-    filter = "name = \"test_service\""
-
+resource "ziti_service_policy" "test_ziti_service_policy" {
+    name = "test_ziti_service_policy"
+    semantic = "AnyOf"
+    type = "Dial"
+    tags = {
+        test_value = "test"
+    }
+    identity_roles = ["@${ziti_identity.test_ziti_identity.id}"]
+    service_roles = ["@${ziti_service.test_service.id}"]
+    posture_check_roles = ["#default"]
 }
