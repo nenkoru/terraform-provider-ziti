@@ -8,6 +8,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/openziti/edge-api/rest_model"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"encoding/json"
@@ -101,6 +102,8 @@ func AttributesToNativeTypes(attrs map[string]attr.Value) map[string]interface{}
 			result[key] = val.ValueString()
 		} else if val, ok := value.(types.Int32); ok {
 			result[key] = val.ValueInt32()
+        } else if val, ok := value.(types.Int64); ok {
+			result[key] = val.ValueInt64()
 		} else if val, ok := value.(types.Bool); ok {
 			result[key] = val.ValueBool()
 		}
@@ -198,4 +201,19 @@ func GenericFromObject[T any](mapData map[string]interface{}, dto *T) error {
 	}
 
 	return nil
+}
+
+func TagsFromAttributes(mapData map[string]attr.Value) *rest_model.Tags {
+    var retTags *rest_model.Tags
+    retTags = &rest_model.Tags{}
+    retTags.SubTags = make(map[string]interface{}) // Initialize the map
+    for key, value := range mapData {
+        if val, ok := value.(types.String); ok {
+            retTags.SubTags[key] = val.ValueString()
+        }
+    }
+    if len(retTags.SubTags) == 0 {
+        retTags = nil
+    }
+    return retTags
 }
