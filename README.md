@@ -27,7 +27,7 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 | edge-router-policy        | ❌                   | ❌                  |
 | enrollment                | ❌                   | ❌                  |
 | ext-jwt-signer            | ❌                   | ❌                  |
-| identity                  | ❌                   | ✅                  |
+| identity                  | ✅                   | ✅                  |
 | posture-check             | ❌                   | ❌                  |
 | service                   | ✅                   | ✅                  |
 | service-edge-router-policy| ❌                   | ❌                  |
