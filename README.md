@@ -22,20 +22,22 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 | authenticator             | ❌                   | ❌                  |
 | ca                        | ❌                   | ❌                  |
 | config                    | ✅                   | ✅                  |
-| config-type               | ❌                   | ❌                  |
+| config-type               | 🚧                   | 🚧                  |
 | edge-router               | ❌                   | ❌                  |
 | edge-router-policy        | ✅                   | ✅                  |
-| enrollment                | ❌                   | ❌                  |
+| enrollment                | 🚧                   | 🚧                  |
 | ext-jwt-signer            | ❌                   | ❌                  |
 | identity                  | ✅                   | ✅                  |
 | posture-check             | ❌                   | ❌                  |
 | service                   | ✅                   | ✅                  |
-| service-edge-router-policy| ✅                   | ✅                  |
+| service-edge-router-policy| 🚧                   | ✅                  |
 | service-policy            | ✅                   | ✅                  |
 | terminator                | ❌                   | ❌                  |
 | transit-router            | ❌                   | ❌                  |
 
-
+🚧 - Enrollment is a one-time thing, barely suitable in Terraform world. Config-type is just beyond the project scope(for now at least).  
+✅ - Entity could be fully controlled via a Terraform provider, and that both `one` and `many` datasources are ready to be used.  
+❌ - Not yet implemented.  
 
 ## Requirements
 
