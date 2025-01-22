@@ -306,3 +306,25 @@ data "ziti_posture_check_multi_process" "test_ziti_posture_multi_process" {
 data "ziti_posture_check_multi_process" "test_ziti_posture_multi_process_ids" {
     filter = "name contains \"test\""
 }
+
+resource "ziti_posture_check_process" "test_ziti_posture_process" {
+    name = "test_posture_process"
+    role_attributes = ["test_process"]
+    tags = {
+        test_tag = "test"
+        tttt = "ttt"
+    }
+    process = {
+        path = "/usr/bin"
+        os_type = "Linux"
+    }
+}
+
+data "ziti_posture_check_process" "test_ziti_posture_process" {
+    filter = "name contains \"test\""
+    most_recent = true
+}
+
+data "ziti_posture_check_process_ids" "test_ziti_posture_process_ids" {
+    filter = "name contains \"test\""
+}

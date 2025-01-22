@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	//"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/openziti/edge-api/rest_management_api_client/posture_checks"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/openziti/edge-api/rest_model"
@@ -21,20 +21,20 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &ZitiPostureMultiProcessDataSource{}
+var _ datasource.DataSource = &ZitiPostureProcessDataSource{}
 
-func NewZitiPostureMultiProcessDataSource() datasource.DataSource {
-	return &ZitiPostureMultiProcessDataSource{}
+func NewZitiPostureProcessDataSource() datasource.DataSource {
+	return &ZitiPostureProcessDataSource{}
 }
 
-// ZitiPostureMultiProcessDataSource defines the resource implementation.
-type ZitiPostureMultiProcessDataSource struct {
+// ZitiPostureProcessDataSource defines the resource implementation.
+type ZitiPostureProcessDataSource struct {
 	client *edge_apis.ManagementApiClient
 }
 
-// ZitiPostureMultiProcessDataSourceModel describes the resource data model.
+// ZitiPostureProcessDataSourceModel describes the resource data model.
 
-type ZitiPostureMultiProcessDataSourceModel struct {
+type ZitiPostureProcessDataSourceModel struct {
 	ID                     types.String `tfsdk:"id"`
 	Filter                    types.String `tfsdk:"filter"`
     MostRecent  types.Bool  `tfsdk:"most_recent"`
@@ -42,11 +42,10 @@ type ZitiPostureMultiProcessDataSourceModel struct {
 
     RoleAttributes  types.List  `tfsdk:"role_attributes"`
     Tags    types.Map    `tfsdk:"tags"`
-    Processes  types.List  `tfsdk:"processes"`
-    Semantic  types.String  `tfsdk:"semantic"`
+    Process  types.Object  `tfsdk:"process"`
 }
 
-func (d *ZitiPostureMultiProcessDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
+func (d *ZitiPostureProcessDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{
 		datasourcevalidator.AtLeastOneOf(
 			path.MatchRoot("id"),
@@ -60,11 +59,11 @@ func (d *ZitiPostureMultiProcessDataSource) ConfigValidators(ctx context.Context
 		),
 	}
 }
-func (d *ZitiPostureMultiProcessDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_posture_check_multi_process"
+func (d *ZitiPostureProcessDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_posture_check_process"
 }
 
-func (d *ZitiPostureMultiProcessDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ZitiPostureProcessDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "A datasource to define a service of Ziti",
 
@@ -88,37 +87,30 @@ func (d *ZitiPostureMultiProcessDataSource) Schema(ctx context.Context, req data
                 Optional: true,
 			},
 
-            "processes": schema.ListNestedAttribute{
+            "process": schema.SingleNestedAttribute{
 				Computed: true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"path": schema.StringAttribute{
-							Computed: true,
-						},
-						"os_type": schema.StringAttribute{
-							Computed: true,
-						},
-                        "hashes": schema.ListAttribute{
-                            ElementType:         types.StringType,
-                            MarkdownDescription: "A list of file hashes",
-                            Computed:            true,
-                        },
-                        "signer_fingerprints": schema.ListAttribute{
-                            ElementType:         types.StringType,
-                            MarkdownDescription: "A list of file sign fingerprints",
-                            Computed:            true,
-                        },
-					},
+                Attributes: map[string]schema.Attribute{
+                    "path": schema.StringAttribute{
+                        Computed: true,
+                    },
+                    "os_type": schema.StringAttribute{
+                        Computed: true,
+                    },
+                    "hashes": schema.ListAttribute{
+                        ElementType:         types.StringType,
+                        MarkdownDescription: "A list of file hashes",
+                        Computed:            true,
+                    },
+                    "signer_fingerprint": schema.StringAttribute{
+                        MarkdownDescription: "A list of file sign fingerprints",
+                        Computed:            true,
+                    },
 				},
 			},
             "role_attributes": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "A list of role attributes",
 				Computed:            true,
-			},
-            "semantic": schema.StringAttribute{
-				MarkdownDescription: "Semantic for posture checks of the service",
-                Computed: true,
 			},
             "tags": schema.MapAttribute{
 				ElementType:         types.StringType,
@@ -129,7 +121,7 @@ func (d *ZitiPostureMultiProcessDataSource) Schema(ctx context.Context, req data
 	}
 }
 
-func (d *ZitiPostureMultiProcessDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ZitiPostureProcessDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -150,8 +142,8 @@ func (d *ZitiPostureMultiProcessDataSource) Configure(ctx context.Context, req d
 }
 
 
-func (d *ZitiPostureMultiProcessDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-    var state ZitiPostureMultiProcessDataSourceModel
+func (d *ZitiPostureProcessDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+    var state ZitiPostureProcessDataSourceModel
 
 	tflog.Info(ctx, "Reading Ziti Edge Posture Check from API")
 	// Read Terraform prior state data into the model
@@ -185,10 +177,10 @@ func (d *ZitiPostureMultiProcessDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-    var posture_checks []rest_model.PostureCheckProcessMultiDetail
+    var posture_checks []rest_model.PostureCheckProcessDetail
     for _, postureCheck := range data.Payload.Data() {
-        if multiProcessCheck, ok := postureCheck.(*rest_model.PostureCheckProcessMultiDetail); ok {
-            posture_checks = append(posture_checks, *multiProcessCheck)
+        if processCheck, ok := postureCheck.(*rest_model.PostureCheckProcessDetail); ok {
+            posture_checks = append(posture_checks, *processCheck)
         }
     }
     if len(posture_checks) > 1 && !state.MostRecent.ValueBool() {
@@ -209,37 +201,29 @@ func (d *ZitiPostureMultiProcessDataSource) Read(ctx context.Context, req dataso
     posture_check := posture_checks[0]
     name := posture_check.Name()
 	state.Name = types.StringValue(*name)
-    state.Semantic = types.StringValue(string(*posture_check.Semantic))
 
     state.Tags, _ = NativeMapToTerraformMap(ctx, types.StringType, posture_check.Tags().SubTags)
     state.RoleAttributes, _ = NativeListToTerraformTypedList(ctx, types.StringType, []string(*posture_check.RoleAttributes()))
 
-    if posture_check.Processes != nil {
-		var objects []attr.Value
-		for _, processMulti := range posture_check.Processes {
-			processMultico, _ := JsonStructToObject(ctx, processMulti, true, false)
-            processMultico = convertKeysToSnake(processMultico)
-            
-            delete(processMultico, "hashes")
-            delete(processMultico, "signer_fingerprints")
-            delete(processMultico, "os_type")
-            
-			objectMap := NativeBasicTypedAttributesToTerraform(ctx, processMultico, ProcessMultiModel.AttrTypes)
-            objectMap["hashes"], _ = NativeListToTerraformTypedList(ctx, types.StringType, processMulti.Hashes)
-            objectMap["signer_fingerprints"], _ = NativeListToTerraformTypedList(ctx, types.StringType, processMulti.SignerFingerprints)
-            objectMap["os_type"] = types.StringValue(string(*processMulti.OsType))
+    if posture_check.Process != nil {
+        processco, _ := JsonStructToObject(ctx, *posture_check.Process, true, false)
+        processco = convertKeysToSnake(processco)
+        
+        delete(processco, "hashes")
+        delete(processco, "signer_fingerprint")
+        delete(processco, "os_type")
+        
+        objectMap := NativeBasicTypedAttributesToTerraform(ctx, processco, ProcessModel.AttrTypes)
+        objectMap["hashes"], _ = NativeListToTerraformTypedList(ctx, types.StringType, posture_check.Process.Hashes)
+        objectMap["signer_fingerprint"] = types.StringValue(posture_check.Process.SignerFingerprint)
+        objectMap["os_type"] = types.StringValue(string(*posture_check.Process.OsType))
 
-			object, _ := types.ObjectValue(ProcessMultiModel.AttrTypes, objectMap)
-			objects = append(objects, object)
-		}
-
-		processes, _ := types.ListValueFrom(ctx, ProcessMultiModel, objects)
-		state.Processes = processes
-	} else {
-		state.Processes = types.ListNull(ProcessMultiModel)
-	}
+        object, _ := types.ObjectValue(ProcessModel.AttrTypes, objectMap)
+        state.Process = object
+    } else {
+        state.Process = types.ObjectNull(ProcessModel.AttrTypes)
+    }
     state.ID = state.ID
-    state = state
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
