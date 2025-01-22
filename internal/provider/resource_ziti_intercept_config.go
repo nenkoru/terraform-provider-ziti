@@ -255,7 +255,7 @@ func (r *ZitiInterceptConfigResourceModel) ToInterceptConfigDTO(ctx context.Cont
 	}
 
 	if len(r.PortRanges.Elements()) > 0 {
-		allowedPortRanges := ElementsToListOfStructs(ctx, r.PortRanges.Elements())
+		allowedPortRanges := ElementsToListOfStructs[ConfigPortsDTO](ctx, r.PortRanges.Elements())
 		interceptConfigDto.PortRanges = &allowedPortRanges
 	}
 

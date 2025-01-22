@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/openziti/edge-api/rest_model"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"encoding/json"
 
@@ -128,7 +129,7 @@ func NativeBasicTypedAttributesToTerraform(ctx context.Context, attrs map[string
 			} else if val, ok := value.(*string); ok {
 				result[targetAttrName] = types.StringPointerValue(val)
 			} else {
-				tflog.Debug(ctx, "Could not convert "+targetAttrName+" to "+targetAttrType.String())
+				tflog.Info(ctx, "Could not convert "+targetAttrName+" to "+targetAttrType.String())
 			}
 		} else if targetAttrType == types.Int32Type {
 			if value == nil {
@@ -206,6 +207,24 @@ func GenericFromObject[T any](mapData map[string]interface{}, dto *T) error {
 	return nil
 }
 
+func NativeListToTerraformTypedList(ctx context.Context, tfType attr.Type, stringArray []string) (types.List, diag.Diagnostics) {
+    if len(stringArray) > 0 {
+        stringList, diag := types.ListValueFrom(ctx, tfType, stringArray)
+        return stringList, diag
+    } else {
+        return types.ListNull(tfType), nil
+    }
+
+}
+func NativeMapToTerraformMap(ctx context.Context, tfType attr.Type, mapData map[string]interface{}) (types.Map, diag.Diagnostics) {
+    if len(mapData) != 0 {
+        map_, diag := types.MapValueFrom(ctx, tfType, mapData)
+        return map_, diag
+    } else {
+        return types.MapNull(tfType), nil
+    }
+}
+
 func TagsFromAttributes(mapData map[string]attr.Value) *rest_model.Tags {
     var retTags *rest_model.Tags
     retTags = &rest_model.Tags{}
@@ -221,3 +240,52 @@ func TagsFromAttributes(mapData map[string]attr.Value) *rest_model.Tags {
     return retTags
 }
 
+func ElementsToListOfStrings(elements []attr.Value) []string {
+    var ret []string
+    for _, value := range elements {
+        if element, ok := value.(types.String); ok {
+            ret = append(ret, element.ValueString())
+        }
+    }
+    return ret
+
+}
+func ElementsToListOfStructs[T any](ctx context.Context, elements []attr.Value) []T {
+	if len(elements) == 0 {
+		return []T{} // Return an empty slice if there are no elements
+	}
+
+	var result []T
+
+	for _, v := range elements {
+		var item T
+		if val, ok := v.(types.Object); ok {
+			attrsNative := AttributesToNativeTypes(val.Attributes())
+            attrsNative = convertKeysToCamel(attrsNative)
+			GenericFromObject(attrsNative, &item)
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+func ElementsToListOfStructsPointers[T any](ctx context.Context, elements []attr.Value) []*T {
+	if len(elements) == 0 {
+		return []*T{} // Return an empty slice if there are no elements
+	}
+
+	var result []*T
+
+	for _, v := range elements {
+		var item T
+		if val, ok := v.(types.Object); ok {
+			attrsNative := AttributesToNativeTypes(val.Attributes())
+            attrsNative = convertKeysToCamel(attrsNative)
+			GenericFromObject(attrsNative, &item)
+			result = append(result, &item)
+		}
+	}
+
+	return result
+}

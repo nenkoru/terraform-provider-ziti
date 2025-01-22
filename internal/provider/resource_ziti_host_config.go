@@ -555,26 +555,6 @@ func AttributesToStruct[T any](attr map[string]attr.Value)  T {
 	return result
 }
 
-
-func ElementsToListOfStructs(ctx context.Context, elements []attr.Value) []ConfigPortsDTO {
-	if len(elements) != 0 {
-		elementsArray := []ConfigPortsDTO{}
-		for _, v := range elements {
-			var hostConfigAllowedPorts ConfigPortsDTO
-			if val, ok := v.(types.Object); ok {
-				attrsNative := AttributesToNativeTypes(val.Attributes())
-				GenericFromObject(attrsNative, &hostConfigAllowedPorts)
-				elementsArray = append(elementsArray, hostConfigAllowedPorts)
-			}
-		}
-		return elementsArray
-	}
-	return []ConfigPortsDTO{}
-}
-
-
-
-
 func convertCheckActionToTerraformList(ctx context.Context, actions *[]CheckActionDTO) (types.List, diag.Diagnostics) {
     var actionsTf []attr.Value
     for _, item := range *actions {
@@ -735,7 +715,7 @@ func (r *ZitiHostConfigResourceModel) ToHostConfigDTO(ctx context.Context) HostC
 
 
 	if len(r.AllowedPortRanges.Elements()) > 0 {
-		allowedPortRanges := ElementsToListOfStructs(ctx, r.AllowedPortRanges.Elements())
+		allowedPortRanges := ElementsToListOfStructs[ConfigPortsDTO](ctx, r.AllowedPortRanges.Elements())
 		hostConfigDto.AllowedPortRanges = &allowedPortRanges
 	}
 
