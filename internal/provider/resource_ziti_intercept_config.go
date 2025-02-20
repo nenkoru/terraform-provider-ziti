@@ -193,9 +193,9 @@ type InterceptConfigDTO struct {
 	SourceIP    *string           `json:"sourceIp,omitempty"`
 }
 
-func AttributesToDialOptionsStruct(attr map[string]attr.Value) DialOptionsDTO {
+func AttributesToDialOptionsStruct(ctx context.Context, attr map[string]attr.Value) DialOptionsDTO {
 	var dialOptions DialOptionsDTO
-	attrsNative := AttributesToNativeTypes(attr)
+	attrsNative := AttributesToNativeTypes(ctx, attr)
 	attrsNative = convertKeysToCamel(attrsNative)
 	GenericFromObject(attrsNative, &dialOptions)
 	return dialOptions
@@ -245,7 +245,7 @@ func (dto *InterceptConfigDTO) ConvertToZitiResourceModel(ctx context.Context) Z
 }
 
 func (r *ZitiInterceptConfigResourceModel) ToInterceptConfigDTO(ctx context.Context) InterceptConfigDTO {
-	dialOptions := AttributesToDialOptionsStruct(r.DialOptions.Attributes())
+	dialOptions := AttributesToDialOptionsStruct(ctx, r.DialOptions.Attributes())
 
 	interceptConfigDto := InterceptConfigDTO{
 		Addresses:   ElementsToStringArray(r.Addresses.Elements()),

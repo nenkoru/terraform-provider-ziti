@@ -5,14 +5,14 @@ package provider
 
 import (
 	"context"
-    //"encoding/json"
+    "encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	//"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -28,42 +28,41 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &ZitiPostureProcessResource{}
-var _ resource.ResourceWithImportState = &ZitiPostureProcessResource{}
+var _ resource.Resource = &ZitiPostureOperatingSystemResource{}
+var _ resource.ResourceWithImportState = &ZitiPostureOperatingSystemResource{}
 
-func NewZitiPostureProcessResource() resource.Resource {
-	return &ZitiPostureProcessResource{}
+func NewZitiPostureOperatingSystemResource() resource.Resource {
+	return &ZitiPostureOperatingSystemResource{}
 }
 
-var ProcessModel = types.ObjectType{
-	AttrTypes: map[string]attr.Type{
-		"path":          types.StringType,
-		"os_type":          types.StringType,
-        "hashes": types.ListType{ElemType: types.StringType},
-        "signer_fingerprint": types.StringType,
-	},
-}
-// ZitiPostureProcessResource defines the resource implementation.
-type ZitiPostureProcessResource struct {
+// ZitiPostureOperatingSystemResource defines the resource implementation.
+type ZitiPostureOperatingSystemResource struct {
 	client *edge_apis.ManagementApiClient
 }
 
-// ZitiPostureProcessResourceModel describes the resource data model.
-type ZitiPostureProcessResourceModel struct {
+var OperatingSystemModel = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		"type":          types.StringType,
+        "versions":          types.ListType{ElemType: types.StringType},
+	},
+}
+// ZitiPostureOperatingSystemResourceModel describes the resource data model.
+type ZitiPostureOperatingSystemResourceModel struct {
 	ID                     types.String `tfsdk:"id"`
 
 	Name                   types.String `tfsdk:"name"`
     RoleAttributes  types.List  `tfsdk:"role_attributes"`
     Tags    types.Map    `tfsdk:"tags"`
-    Process  types.Object  `tfsdk:"process"`
+
+    OperatingSystems  types.List  `tfsdk:"operating_systems"`
 }
 
 
-func (r *ZitiPostureProcessResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_posture_check_process"
+func (r *ZitiPostureOperatingSystemResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_posture_check_operating_system"
 }
 
-func (r *ZitiPostureProcessResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ZitiPostureOperatingSystemResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "A resource to define a host.v1 config of Ziti",
 
@@ -79,31 +78,22 @@ func (r *ZitiPostureProcessResource) Schema(ctx context.Context, req resource.Sc
 				MarkdownDescription: "Name of the service",
 				Required:            true,
 			},
-            "process": schema.SingleNestedAttribute{
+            "operating_systems": schema.ListNestedAttribute{
 				Required: true,
-                Attributes: map[string]schema.Attribute{
-                    "path": schema.StringAttribute{
-                        Required: true,
-                    },
-                    "os_type": schema.StringAttribute{
-                        Required: true,
-                        Validators: []validator.String{
-                            stringvalidator.OneOf("Windows", "WindowsServer", "Android", "iOS", "Linux", "macOS"),
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"type": schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("Windows", "WindowsServer", "Android", "iOS", "Linux", "macOS"),
+							},
+						},
+                        "versions": schema.ListAttribute{
+                            ElementType:         types.StringType,
+                            MarkdownDescription: "A list of versions",
+							Required: true,
                         },
-                    },
-                    "hashes": schema.ListAttribute{
-                        ElementType:         types.StringType,
-                        MarkdownDescription: "A list of file hashes",
-                        Optional:            true,
-                        Computed:            true,
-                        Default:             listdefault.StaticValue(types.ListNull(types.StringType)),
-                    },
-                    "signer_fingerprint": schema.StringAttribute{
-                        MarkdownDescription: "A list of file sign fingerprints",
-                        Optional:            true,
-                        Computed: true,
-                        Default:    stringdefault.StaticString(""),
-                    },
+					},
 				},
 			},
             "role_attributes": schema.ListAttribute{
@@ -124,7 +114,7 @@ func (r *ZitiPostureProcessResource) Schema(ctx context.Context, req resource.Sc
 	}
 }
 
-func (r *ZitiPostureProcessResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ZitiPostureOperatingSystemResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -144,8 +134,8 @@ func (r *ZitiPostureProcessResource) Configure(ctx context.Context, req resource
 	r.client = client
 }
 
-func (r *ZitiPostureProcessResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan ZitiPostureProcessResourceModel
+func (r *ZitiPostureOperatingSystemResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan ZitiPostureOperatingSystemResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -158,14 +148,16 @@ func (r *ZitiPostureProcessResource) Create(ctx context.Context, req resource.Cr
 
 	name := plan.Name.ValueString()
     tags := TagsFromAttributes(plan.Tags.Elements())
-    var process rest_model.Process
-    GenericFromObject[rest_model.Process](convertKeysToCamel(AttributesToNativeTypes(ctx, plan.Process.Attributes())), &process)
-	postureCheckCreate := rest_model.PostureCheckProcessCreate{
-        Process:  &process,
+    operatingSystems := ElementsToListOfStructsPointers[rest_model.OperatingSystem](ctx, plan.OperatingSystems.Elements())
+    
+	postureCheckCreate := rest_model.PostureCheckOperatingSystemCreate{
+        OperatingSystems:  operatingSystems,
 	}
+    
     postureCheckCreate.SetName(&name)
     postureCheckCreate.SetRoleAttributes(&roleAttributes)
     postureCheckCreate.SetTags(tags)
+
 	params := posture_checks.NewCreatePostureCheckParams()
     
 	params.PostureCheck = &postureCheckCreate
@@ -190,9 +182,9 @@ func (r *ZitiPostureProcessResource) Create(ctx context.Context, req resource.Cr
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *ZitiPostureProcessResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ZitiPostureProcessResourceModel
-    var newState ZitiPostureProcessResourceModel
+func (r *ZitiPostureOperatingSystemResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ZitiPostureOperatingSystemResourceModel
+    var newState ZitiPostureOperatingSystemResourceModel
 
 	tflog.Info(ctx, "Reading Ziti Edge Posture Check from API")
 	// Read Terraform prior state data into the model
@@ -218,32 +210,38 @@ func (r *ZitiPostureProcessResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-    posture_check, _ := data.Payload.Data().(*rest_model.PostureCheckProcessDetail)
+    posture_check, _ := data.Payload.Data().(*rest_model.PostureCheckOperatingSystemDetail)
     name := posture_check.Name()
 	newState.Name = types.StringValue(*name)
 
     newState.Tags, _ = NativeMapToTerraformMap(ctx, types.StringType, posture_check.Tags().SubTags)
     newState.RoleAttributes, _ = NativeListToTerraformTypedList(ctx, types.StringType, []string(*posture_check.RoleAttributes()))
 
-    if posture_check.Process != nil {
-        processco, _ := JsonStructToObject(ctx, *posture_check.Process, true, false)
-        processco = convertKeysToSnake(processco)
-        
-        delete(processco, "hashes")
-        delete(processco, "signer_fingerprint")
-        delete(processco, "os_type")
-        
-        objectMap := NativeBasicTypedAttributesToTerraform(ctx, processco, ProcessModel.AttrTypes)
-        objectMap["hashes"], _ = NativeListToTerraformTypedList(ctx, types.StringType, posture_check.Process.Hashes)
-        objectMap["signer_fingerprint"] = types.StringValue(posture_check.Process.SignerFingerprint)
-        objectMap["os_type"] = types.StringValue(string(*posture_check.Process.OsType))
+    if posture_check.OperatingSystems != nil {
+		var objects []attr.Value
+		for _, operatingSystem := range posture_check.OperatingSystems {
+			operatingSystemco, _ := JsonStructToObject(ctx, operatingSystem, true, false)
+            operatingSystemco = convertKeysToSnake(operatingSystemco)
+            
+			objectMap := NativeBasicTypedAttributesToTerraform(ctx, operatingSystemco, OperatingSystemModel.AttrTypes)
+            objectMap["versions"], _ = NativeListToTerraformTypedList(ctx, types.StringType, operatingSystem.Versions)
+            objectMap["type"] = types.StringValue(string(*operatingSystem.Type))
 
-        object, _ := types.ObjectValue(ProcessModel.AttrTypes, objectMap)
-        newState.Process = object
-    } else {
-        newState.Process = types.ObjectNull(ProcessModel.AttrTypes)
+			object, _ := types.ObjectValue(OperatingSystemModel.AttrTypes, objectMap)
 
-    }
+            jsonObj, _ := json.Marshal(operatingSystem)
+            tflog.Info(ctx, string(jsonObj))
+
+
+			objects = append(objects, object)
+		}
+
+        
+		operatingSystems, _ := types.ListValueFrom(ctx, OperatingSystemModel, objects)
+		newState.OperatingSystems = operatingSystems
+	} else {
+		newState.OperatingSystems = types.ListNull(OperatingSystemModel)
+	}
     newState.ID = state.ID
     state = newState
 
@@ -251,8 +249,8 @@ func (r *ZitiPostureProcessResource) Read(ctx context.Context, req resource.Read
 
 }
 
-func (r *ZitiPostureProcessResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan ZitiPostureProcessResourceModel
+func (r *ZitiPostureOperatingSystemResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan ZitiPostureOperatingSystemResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -265,14 +263,20 @@ func (r *ZitiPostureProcessResource) Update(ctx context.Context, req resource.Up
 
 	name := plan.Name.ValueString()
     tags := TagsFromAttributes(plan.Tags.Elements())
-    var process rest_model.Process
-    GenericFromObject[rest_model.Process](convertKeysToCamel(AttributesToNativeTypes(ctx, plan.Process.Attributes())), &process)
-	postureCheckUpdate := rest_model.PostureCheckProcessPatch{
-        Process:  &process,
+    operatingSystems := ElementsToListOfStructsPointers[rest_model.OperatingSystem](ctx, plan.OperatingSystems.Elements())
+    
+	postureCheckUpdate := rest_model.PostureCheckOperatingSystemPatch{
+        OperatingSystems:  operatingSystems,
 	}
+    
     postureCheckUpdate.SetName(name)
     postureCheckUpdate.SetRoleAttributes(&roleAttributes)
     postureCheckUpdate.SetTags(tags)
+
+    jsonObj, _ := json.Marshal(postureCheckUpdate)
+	tflog.Info(ctx, string(jsonObj))
+
+
 	params := posture_checks.NewPatchPostureCheckParams()
     
     params.ID = plan.ID.ValueString()
@@ -297,8 +301,8 @@ func (r *ZitiPostureProcessResource) Update(ctx context.Context, req resource.Up
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *ZitiPostureProcessResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan ZitiPostureProcessResourceModel
+func (r *ZitiPostureOperatingSystemResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan ZitiPostureOperatingSystemResourceModel
 
 	tflog.Debug(ctx, "Deleting Ziti Service Edge Router Policy")
 	// Read Terraform prior state data into the model
@@ -327,6 +331,6 @@ func (r *ZitiPostureProcessResource) Delete(ctx context.Context, req resource.De
 }
 
 
-func (r *ZitiPostureProcessResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ZitiPostureOperatingSystemResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

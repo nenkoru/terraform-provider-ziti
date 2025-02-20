@@ -246,10 +246,6 @@ func (r *ZitiPostureMultiProcessResource) Read(ctx context.Context, req resource
 			processMultico, _ := JsonStructToObject(ctx, processMulti, true, false)
             processMultico = convertKeysToSnake(processMultico)
             
-            delete(processMultico, "hashes")
-            delete(processMultico, "signer_fingerprints")
-            delete(processMultico, "os_type")
-            
 			objectMap := NativeBasicTypedAttributesToTerraform(ctx, processMultico, ProcessMultiModel.AttrTypes)
             objectMap["hashes"], _ = NativeListToTerraformTypedList(ctx, types.StringType, processMulti.Hashes)
             objectMap["signer_fingerprints"], _ = NativeListToTerraformTypedList(ctx, types.StringType, processMulti.SignerFingerprints)

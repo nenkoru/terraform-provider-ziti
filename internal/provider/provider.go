@@ -289,13 +289,20 @@ func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource
 	return []func() resource.Resource{
 		NewZitiHostConfigResource,
 		NewZitiInterceptConfigResource,
+
         NewZitiServiceResource,
         NewZitiIdentityResource,
+
         NewZitiServicePolicyResource,
         NewZitiServiceEdgeRouterPolicyResource,
         NewZitiEdgeRouterPolicyResource,
+
         NewZitiPostureMultiProcessResource,
         NewZitiPostureProcessResource,
+        NewZitiPostureOperatingSystemResource,
+        NewZitiPostureMfaResource,
+        NewZitiPostureMacAddressesResource,
+        NewZitiPostureDomainsResource,
 	}
 }
 
@@ -327,6 +334,20 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 
         NewZitiPostureProcessDataSource,
         NewZitiPostureProcessIdsDataSource,
+
+        NewZitiPostureOperatingSystemDataSource,
+        NewZitiPostureOperatingSystemIdsDataSource,
+
+        NewZitiPostureMfaDataSource,
+        NewZitiPostureMfaIdsDataSource,
+
+        NewZitiPostureMacAddressesDataSource,
+        NewZitiPostureMacAddressesIdsDataSource,
+
+        NewZitiPostureDomainsDataSource,
+        NewZitiPostureDomainsIdsDataSource,
+
+
 
 	}
 }

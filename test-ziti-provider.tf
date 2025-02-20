@@ -292,7 +292,8 @@ resource "ziti_posture_check_multi_process" "test_ziti_posture_multi_process" {
     processes = [
         {
             path = "/usr/bin"
-            os_type = "Linux"
+            os_type = "Windows"
+            hashes = ["tttt"]
         }
     ]
     semantic = "AnyOf"
@@ -316,7 +317,7 @@ resource "ziti_posture_check_process" "test_ziti_posture_process" {
     }
     process = {
         path = "/usr/bin"
-        os_type = "Linux"
+        os_type = "Windows"
     }
 }
 
@@ -326,5 +327,89 @@ data "ziti_posture_check_process" "test_ziti_posture_process" {
 }
 
 data "ziti_posture_check_process_ids" "test_ziti_posture_process_ids" {
+    filter = "name contains \"test\""
+}
+
+resource "ziti_posture_check_operating_system" "test_ziti_posture_operating_system" {
+    name = "test_posture_operating_systems"
+    role_attributes = ["test_operating_system"]
+    tags = {
+        test_tag = "test"
+        tttt = "ttt"
+    }
+    operating_systems = [
+        {
+            type = "Windows"
+            versions = ["10.0.0"]
+        }
+    ]
+}
+
+data "ziti_posture_check_operating_system" "test_ziti_posture_operating_system" {
+    filter = "name contains \"test\""
+    most_recent = true
+}
+
+data "ziti_posture_check_operating_system_ids" "test_ziti_posture_operating_system_ids" {
+    filter = "name contains \"test\""
+}
+
+resource "ziti_posture_check_mfa" "test_ziti_posture_mfa" {
+    name = "test_posture_mfa"
+    role_attributes = ["test_operating_system"]
+    tags = {
+        test_tag = "test"
+        tttt = "ttt"
+    }
+    ignore_legacy_endpoints = false
+    prompt_on_unlock = true
+    prompt_on_wake = true
+    timeout_seconds = -1
+}
+
+data "ziti_posture_check_mfa" "test_ziti_posture_mfa" {
+    filter = "name contains \"test\""
+    most_recent = true
+}
+
+data "ziti_posture_check_mfa_ids" "test_ziti_posture_mfa_ids" {
+    filter = "name contains \"test\""
+}
+
+resource "ziti_posture_check_mac_addresses" "test_ziti_posture_mac_addresses" {
+    name = "test_posture_mac_addresses"
+    role_attributes = ["test_operating_system"]
+    tags = {
+        test_tag = "test"
+        tttt = "ttt"
+    }
+    mac_addresses = ["00:1A:2B:3C:4D:5E"]
+}
+
+data "ziti_posture_check_mac_addresses" "test_ziti_posture_mac_addresses" {
+    filter = "name contains \"test\""
+    most_recent = true
+}
+
+data "ziti_posture_check_mac_addresses_ids" "test_ziti_posture_mac_addresses_ids" {
+    filter = "name contains \"test\""
+}
+
+resource "ziti_posture_check_domains" "test_ziti_posture_domains" {
+    name = "test_posture_domains"
+    role_attributes = ["test_operating_system"]
+    tags = {
+        test_tag = "test"
+        tttt = "ttt"
+    }
+    domains = ["contoso.net"]
+}
+
+data "ziti_posture_check_domains" "test_ziti_posture_domains" {
+    filter = "name contains \"test\""
+    most_recent = true
+}
+
+data "ziti_posture_check_domains_ids" "test_ziti_posture_domains_ids" {
     filter = "name contains \"test\""
 }

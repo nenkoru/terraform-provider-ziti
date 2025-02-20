@@ -99,7 +99,7 @@ func ElementsToStringArray(elements []attr.Value) *[]string {
 	return nil
 }
 
-func AttributesToNativeTypes(attrs map[string]attr.Value) map[string]interface{} {
+func AttributesToNativeTypes(ctx context.Context, attrs map[string]attr.Value) map[string]interface{} {
 	result := make(map[string]interface{})
 	for key, value := range attrs {
 		if val, ok := value.(types.String); ok {
@@ -110,7 +110,12 @@ func AttributesToNativeTypes(attrs map[string]attr.Value) map[string]interface{}
 			result[key] = val.ValueInt64()
 		} else if val, ok := value.(types.Bool); ok {
 			result[key] = val.ValueBool()
-		}
+        } else if val, ok := value.(types.List); ok {
+            if val.ElementType(ctx) == types.StringType {
+                result[key] = ElementsToListOfStrings(val.Elements())
+            }
+
+        }
 	}
 	return result
 
@@ -260,7 +265,7 @@ func ElementsToListOfStructs[T any](ctx context.Context, elements []attr.Value) 
 	for _, v := range elements {
 		var item T
 		if val, ok := v.(types.Object); ok {
-			attrsNative := AttributesToNativeTypes(val.Attributes())
+			attrsNative := AttributesToNativeTypes(ctx, val.Attributes())
             attrsNative = convertKeysToCamel(attrsNative)
 			GenericFromObject(attrsNative, &item)
 			result = append(result, item)
@@ -280,7 +285,7 @@ func ElementsToListOfStructsPointers[T any](ctx context.Context, elements []attr
 	for _, v := range elements {
 		var item T
 		if val, ok := v.(types.Object); ok {
-			attrsNative := AttributesToNativeTypes(val.Attributes())
+			attrsNative := AttributesToNativeTypes(ctx, val.Attributes())
             attrsNative = convertKeysToCamel(attrsNative)
 			GenericFromObject(attrsNative, &item)
 			result = append(result, &item)

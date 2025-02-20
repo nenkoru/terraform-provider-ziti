@@ -5,19 +5,21 @@ package provider
 
 import (
 	"context"
-    //"encoding/json"
+    "encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	//"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	//"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	//"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	//"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -28,42 +30,39 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &ZitiPostureProcessResource{}
-var _ resource.ResourceWithImportState = &ZitiPostureProcessResource{}
+var _ resource.Resource = &ZitiPostureMfaResource{}
+var _ resource.ResourceWithImportState = &ZitiPostureMfaResource{}
 
-func NewZitiPostureProcessResource() resource.Resource {
-	return &ZitiPostureProcessResource{}
+func NewZitiPostureMfaResource() resource.Resource {
+	return &ZitiPostureMfaResource{}
 }
 
-var ProcessModel = types.ObjectType{
-	AttrTypes: map[string]attr.Type{
-		"path":          types.StringType,
-		"os_type":          types.StringType,
-        "hashes": types.ListType{ElemType: types.StringType},
-        "signer_fingerprint": types.StringType,
-	},
-}
-// ZitiPostureProcessResource defines the resource implementation.
-type ZitiPostureProcessResource struct {
+// ZitiPostureMfaResource defines the resource implementation.
+type ZitiPostureMfaResource struct {
 	client *edge_apis.ManagementApiClient
 }
 
-// ZitiPostureProcessResourceModel describes the resource data model.
-type ZitiPostureProcessResourceModel struct {
+
+// ZitiPostureMfaResourceModel describes the resource data model.
+type ZitiPostureMfaResourceModel struct {
 	ID                     types.String `tfsdk:"id"`
 
 	Name                   types.String `tfsdk:"name"`
     RoleAttributes  types.List  `tfsdk:"role_attributes"`
     Tags    types.Map    `tfsdk:"tags"`
-    Process  types.Object  `tfsdk:"process"`
+
+    IgnoreLegacyEndpoints types.Bool `tfsdk:"ignore_legacy_endpoints"`
+    PromptOnUnlock types.Bool   `tfsdk:"prompt_on_unlock"`
+    PromptOnWake    types.Bool  `tfsdk:"prompt_on_wake"`
+    TimeoutSeconds  types.Int64  `tfsdk:"timeout_seconds"`
 }
 
 
-func (r *ZitiPostureProcessResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_posture_check_process"
+func (r *ZitiPostureMfaResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_posture_check_mfa"
 }
 
-func (r *ZitiPostureProcessResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ZitiPostureMfaResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "A resource to define a host.v1 config of Ziti",
 
@@ -79,39 +78,36 @@ func (r *ZitiPostureProcessResource) Schema(ctx context.Context, req resource.Sc
 				MarkdownDescription: "Name of the service",
 				Required:            true,
 			},
-            "process": schema.SingleNestedAttribute{
-				Required: true,
-                Attributes: map[string]schema.Attribute{
-                    "path": schema.StringAttribute{
-                        Required: true,
-                    },
-                    "os_type": schema.StringAttribute{
-                        Required: true,
-                        Validators: []validator.String{
-                            stringvalidator.OneOf("Windows", "WindowsServer", "Android", "iOS", "Linux", "macOS"),
-                        },
-                    },
-                    "hashes": schema.ListAttribute{
-                        ElementType:         types.StringType,
-                        MarkdownDescription: "A list of file hashes",
-                        Optional:            true,
-                        Computed:            true,
-                        Default:             listdefault.StaticValue(types.ListNull(types.StringType)),
-                    },
-                    "signer_fingerprint": schema.StringAttribute{
-                        MarkdownDescription: "A list of file sign fingerprints",
-                        Optional:            true,
-                        Computed: true,
-                        Default:    stringdefault.StaticString(""),
-                    },
-				},
-			},
             "role_attributes": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "A list of role attributes",
 				Optional:            true,
 				Computed:            true,
 				Default:             listdefault.StaticValue(types.ListNull(types.StringType)),
+			},
+            "ignore_legacy_endpoints": schema.BoolAttribute{
+				MarkdownDescription: "Controls whether legacy endpoints are ignored for this mfa check",
+				Optional:            true,
+                Computed:   true,
+                Default:    booldefault.StaticBool(false),
+			},
+            "prompt_on_unlock": schema.BoolAttribute{
+				MarkdownDescription: "Controls whether user is prompted to pass mfa check after a device unlock. Defaults to true.",
+				Optional:            true,
+                Computed:   true,
+                Default:    booldefault.StaticBool(true),
+			},
+            "prompt_on_wake": schema.BoolAttribute{
+				MarkdownDescription: "Controls whether user is prompted to pass mfa check after a device wake. Defaults to true.",
+				Optional:            true,
+                Computed:   true,
+                Default:    booldefault.StaticBool(true),
+			},
+            "timeout_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Time after which controls when mfa check times out. Defaults to -1, which indicates no limit.",
+				Optional:            true,
+                Computed:   true,
+                Default:    int64default.StaticInt64(-1),
 			},
             "tags": schema.MapAttribute{
 				ElementType:         types.StringType,
@@ -124,7 +120,7 @@ func (r *ZitiPostureProcessResource) Schema(ctx context.Context, req resource.Sc
 	}
 }
 
-func (r *ZitiPostureProcessResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ZitiPostureMfaResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -144,8 +140,8 @@ func (r *ZitiPostureProcessResource) Configure(ctx context.Context, req resource
 	r.client = client
 }
 
-func (r *ZitiPostureProcessResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan ZitiPostureProcessResourceModel
+func (r *ZitiPostureMfaResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan ZitiPostureMfaResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -158,14 +154,22 @@ func (r *ZitiPostureProcessResource) Create(ctx context.Context, req resource.Cr
 
 	name := plan.Name.ValueString()
     tags := TagsFromAttributes(plan.Tags.Elements())
-    var process rest_model.Process
-    GenericFromObject[rest_model.Process](convertKeysToCamel(AttributesToNativeTypes(ctx, plan.Process.Attributes())), &process)
-	postureCheckCreate := rest_model.PostureCheckProcessCreate{
-        Process:  &process,
+
+    postureCheckMfaProperties := rest_model.PostureCheckMfaProperties{
+        IgnoreLegacyEndpoints:  plan.IgnoreLegacyEndpoints.ValueBool(),
+        PromptOnUnlock:  plan.PromptOnUnlock.ValueBool(),
+        PromptOnWake:  plan.PromptOnWake.ValueBool(),
+        TimeoutSeconds:  plan.TimeoutSeconds.ValueInt64(),
+
+    }
+	postureCheckCreate := rest_model.PostureCheckMfaCreate{
+        PostureCheckMfaProperties:  postureCheckMfaProperties,
 	}
+    
     postureCheckCreate.SetName(&name)
     postureCheckCreate.SetRoleAttributes(&roleAttributes)
     postureCheckCreate.SetTags(tags)
+
 	params := posture_checks.NewCreatePostureCheckParams()
     
 	params.PostureCheck = &postureCheckCreate
@@ -190,9 +194,9 @@ func (r *ZitiPostureProcessResource) Create(ctx context.Context, req resource.Cr
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *ZitiPostureProcessResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ZitiPostureProcessResourceModel
-    var newState ZitiPostureProcessResourceModel
+func (r *ZitiPostureMfaResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ZitiPostureMfaResourceModel
+    var newState ZitiPostureMfaResourceModel
 
 	tflog.Info(ctx, "Reading Ziti Edge Posture Check from API")
 	// Read Terraform prior state data into the model
@@ -218,32 +222,18 @@ func (r *ZitiPostureProcessResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-    posture_check, _ := data.Payload.Data().(*rest_model.PostureCheckProcessDetail)
+    posture_check, _ := data.Payload.Data().(*rest_model.PostureCheckMfaDetail)
     name := posture_check.Name()
 	newState.Name = types.StringValue(*name)
 
     newState.Tags, _ = NativeMapToTerraformMap(ctx, types.StringType, posture_check.Tags().SubTags)
     newState.RoleAttributes, _ = NativeListToTerraformTypedList(ctx, types.StringType, []string(*posture_check.RoleAttributes()))
 
-    if posture_check.Process != nil {
-        processco, _ := JsonStructToObject(ctx, *posture_check.Process, true, false)
-        processco = convertKeysToSnake(processco)
-        
-        delete(processco, "hashes")
-        delete(processco, "signer_fingerprint")
-        delete(processco, "os_type")
-        
-        objectMap := NativeBasicTypedAttributesToTerraform(ctx, processco, ProcessModel.AttrTypes)
-        objectMap["hashes"], _ = NativeListToTerraformTypedList(ctx, types.StringType, posture_check.Process.Hashes)
-        objectMap["signer_fingerprint"] = types.StringValue(posture_check.Process.SignerFingerprint)
-        objectMap["os_type"] = types.StringValue(string(*posture_check.Process.OsType))
-
-        object, _ := types.ObjectValue(ProcessModel.AttrTypes, objectMap)
-        newState.Process = object
-    } else {
-        newState.Process = types.ObjectNull(ProcessModel.AttrTypes)
-
-    }
+    newState.IgnoreLegacyEndpoints = types.BoolValue(posture_check.PostureCheckMfaProperties.IgnoreLegacyEndpoints)
+    newState.PromptOnUnlock = types.BoolValue(posture_check.PostureCheckMfaProperties.PromptOnUnlock)
+    newState.PromptOnWake = types.BoolValue(posture_check.PostureCheckMfaProperties.PromptOnWake)
+    newState.TimeoutSeconds = types.Int64Value(posture_check.PostureCheckMfaProperties.TimeoutSeconds)
+    
     newState.ID = state.ID
     state = newState
 
@@ -251,8 +241,8 @@ func (r *ZitiPostureProcessResource) Read(ctx context.Context, req resource.Read
 
 }
 
-func (r *ZitiPostureProcessResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan ZitiPostureProcessResourceModel
+func (r *ZitiPostureMfaResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan ZitiPostureMfaResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -265,14 +255,27 @@ func (r *ZitiPostureProcessResource) Update(ctx context.Context, req resource.Up
 
 	name := plan.Name.ValueString()
     tags := TagsFromAttributes(plan.Tags.Elements())
-    var process rest_model.Process
-    GenericFromObject[rest_model.Process](convertKeysToCamel(AttributesToNativeTypes(ctx, plan.Process.Attributes())), &process)
-	postureCheckUpdate := rest_model.PostureCheckProcessPatch{
-        Process:  &process,
+
+    postureCheckMfaProperties := rest_model.PostureCheckMfaPropertiesPatch{
+        IgnoreLegacyEndpoints:  plan.IgnoreLegacyEndpoints.ValueBoolPointer(),
+        PromptOnUnlock:  plan.PromptOnUnlock.ValueBoolPointer(),
+        PromptOnWake:  plan.PromptOnWake.ValueBoolPointer(),
+        TimeoutSeconds:  plan.TimeoutSeconds.ValueInt64Pointer(),
+
+    }
+
+	postureCheckUpdate := rest_model.PostureCheckMfaPatch{
+        PostureCheckMfaPropertiesPatch:  postureCheckMfaProperties,
 	}
+    
     postureCheckUpdate.SetName(name)
     postureCheckUpdate.SetRoleAttributes(&roleAttributes)
     postureCheckUpdate.SetTags(tags)
+
+    jsonObj, _ := json.Marshal(postureCheckUpdate)
+	tflog.Info(ctx, string(jsonObj))
+
+
 	params := posture_checks.NewPatchPostureCheckParams()
     
     params.ID = plan.ID.ValueString()
@@ -297,8 +300,8 @@ func (r *ZitiPostureProcessResource) Update(ctx context.Context, req resource.Up
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *ZitiPostureProcessResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var plan ZitiPostureProcessResourceModel
+func (r *ZitiPostureMfaResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan ZitiPostureMfaResourceModel
 
 	tflog.Debug(ctx, "Deleting Ziti Service Edge Router Policy")
 	// Read Terraform prior state data into the model
@@ -327,6 +330,6 @@ func (r *ZitiPostureProcessResource) Delete(ctx context.Context, req resource.De
 }
 
 
-func (r *ZitiPostureProcessResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ZitiPostureMfaResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -213,14 +213,14 @@ func (r *ZitiIdentityResource) Create(ctx context.Context, req resource.CreateRe
     isAdmin := plan.IsAdmin.ValueBool()
 
     serviceHostingCosts := make(rest_model.TerminatorCostMap)
-    for key, value := range AttributesToNativeTypes(plan.ServiceHostingCosts.Elements()) {
+    for key, value := range AttributesToNativeTypes(ctx, plan.ServiceHostingCosts.Elements()) {
         if val, ok := value.(int64); ok {
             cost := rest_model.TerminatorCost(val)
             serviceHostingCosts[key] = &cost
         }
     }
     serviceHostingPrecedences := make(rest_model.TerminatorPrecedenceMap)
-    for key, value := range AttributesToNativeTypes(plan.ServiceHostingPrecedence.Elements()) {
+    for key, value := range AttributesToNativeTypes(ctx, plan.ServiceHostingPrecedence.Elements()) {
         if val, ok := value.(string); ok {
             serviceHostingPrecedences[key] = rest_model.TerminatorPrecedence(val)
         }
@@ -387,14 +387,14 @@ func (r *ZitiIdentityResource) Update(ctx context.Context, req resource.UpdateRe
     externalId := plan.ExternalID.ValueString()
     isAdmin := plan.IsAdmin.ValueBool()
     serviceHostingCosts := make(rest_model.TerminatorCostMap)
-    for key, value := range AttributesToNativeTypes(plan.ServiceHostingCosts.Elements()) {
+    for key, value := range AttributesToNativeTypes(ctx, plan.ServiceHostingCosts.Elements()) {
         if val, ok := value.(int64); ok {
             cost := rest_model.TerminatorCost(val)
             serviceHostingCosts[key] = &cost
         }
     }
     serviceHostingPrecedences := make(rest_model.TerminatorPrecedenceMap)
-    for key, value := range AttributesToNativeTypes(plan.ServiceHostingPrecedence.Elements()) {
+    for key, value := range AttributesToNativeTypes(ctx, plan.ServiceHostingPrecedence.Elements()) {
         if val, ok := value.(string); ok {
             serviceHostingPrecedences[key] = rest_model.TerminatorPrecedence(val)
         }

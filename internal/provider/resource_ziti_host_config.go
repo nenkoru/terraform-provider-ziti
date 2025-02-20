@@ -508,23 +508,23 @@ type HostConfigDTO struct {
 
 
 
-func AttributesToListenOptionsStruct(attr map[string]attr.Value) ListenOptionsDTO {
+func AttributesToListenOptionsStruct(ctx context.Context, attr map[string]attr.Value) ListenOptionsDTO {
 	var listenOptions ListenOptionsDTO
-	attrsNative := AttributesToNativeTypes(attr)
+	attrsNative := AttributesToNativeTypes(ctx, attr)
 	attrsNative = convertKeysToCamel(attrsNative)
 	GenericFromObject(attrsNative, &listenOptions)
 	return listenOptions
 
 }
 
-func HandleActions(attr map[string]attr.Value) *[]CheckActionDTO {
+func HandleActions(ctx context.Context, attr map[string]attr.Value) *[]CheckActionDTO {
 	if value, exists := attr["actions"]; exists {
 		if valueList, ok := value.(types.List); ok {
 			actionsArray := []CheckActionDTO{}
 			for _, v := range valueList.Elements() {
 				if valueObject, ok := v.(types.Object); ok {
 					var checkAction CheckActionDTO
-					attrsNative := AttributesToNativeTypes(valueObject.Attributes())
+					attrsNative := AttributesToNativeTypes(ctx, valueObject.Attributes())
 					attrsNative = convertKeysToCamel(attrsNative)
 
                     GenericFromObject(attrsNative, &checkAction)
@@ -539,9 +539,9 @@ func HandleActions(attr map[string]attr.Value) *[]CheckActionDTO {
 	return nil
 }
 
-func AttributesToStruct[T any](attr map[string]attr.Value)  T {
+func AttributesToStruct[T any](ctx context.Context, attr map[string]attr.Value)  T {
 	var result T
-	attrsNative := AttributesToNativeTypes(attr)
+	attrsNative := AttributesToNativeTypes(ctx, attr)
 	attrsNative = convertKeysToCamel(attrsNative)
 	GenericFromObject(attrsNative, &result)
 
@@ -549,7 +549,7 @@ func AttributesToStruct[T any](attr map[string]attr.Value)  T {
 	// Modify this part if the Actions handling differs per type.
     fieldValue := reflect.ValueOf(&result).Elem().FieldByName("Actions")
     if fieldValue.IsValid() && fieldValue.CanSet() {
-        fieldValue.Set(reflect.ValueOf(HandleActions(attr)))
+        fieldValue.Set(reflect.ValueOf(HandleActions(ctx, attr)))
     }
 
 	return result
@@ -682,18 +682,18 @@ func (dto *HostConfigDTO) ConvertToZitiResourceModel(ctx context.Context) ZitiHo
 }
 
 func (r *ZitiHostConfigResourceModel) ToHostConfigDTO(ctx context.Context) HostConfigDTO {
-	listenOptions := AttributesToListenOptionsStruct(r.ListenOptions.Attributes())
+	listenOptions := AttributesToListenOptionsStruct(ctx, r.ListenOptions.Attributes())
 	var portChecks []PortCheckDTO
 	for _, v := range r.PortChecks.Elements() {
 		if v, ok := v.(types.Object); ok {
-            portCheck := AttributesToStruct[PortCheckDTO](v.Attributes())
+            portCheck := AttributesToStruct[PortCheckDTO](ctx, v.Attributes())
 			portChecks = append(portChecks, portCheck)
 		}
 	}
 	var httpChecks []HTTPCheckDTO
 	for _, v := range r.HTTPChecks.Elements() {
 		if v, ok := v.(types.Object); ok {
-            httpCheck := AttributesToStruct[HTTPCheckDTO](v.Attributes())
+            httpCheck := AttributesToStruct[HTTPCheckDTO](ctx, v.Attributes())
 			httpChecks = append(httpChecks, httpCheck)
 		}
 	}

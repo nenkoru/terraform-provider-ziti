@@ -16,24 +16,25 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 
 
 ## Entities and their status of implementation
+
 | Entity                     | Data Source           | Resource            |
 |----------------------------|-----------------------|---------------------|
+| config                    | ✅                   | ✅                  |
+| edge-router-policy        | ✅                   | ✅                  |
+| identity                  | ✅                   | ✅                  |
+| service                   | ✅                   | ✅                  |
+| posture-check             | ✅                   | ✅                  |
+| service-policy            | ✅                   | ✅                  |
+| service-edge-router-policy| ✅                   | ✅                  |
 | auth-policy               | ❌                   | ❌                  |
 | authenticator             | ❌                   | ❌                  |
 | ca                        | ❌                   | ❌                  |
-| config                    | ✅                   | ✅                  |
-| config-type               | 🚧                   | 🚧                  |
 | edge-router               | ❌                   | ❌                  |
-| edge-router-policy        | ✅                   | ✅                  |
-| enrollment                | 🚧                   | 🚧                  |
 | ext-jwt-signer            | ❌                   | ❌                  |
-| identity                  | ✅                   | ✅                  |
-| posture-check             | ❌                   | ❌                  |
-| service                   | ✅                   | ✅                  |
-| service-edge-router-policy| ✅                   | ✅                  |
-| service-policy            | ✅                   | ✅                  |
 | terminator                | ❌                   | ❌                  |
 | transit-router            | ❌                   | ❌                  |
+| config-type               | 🚧                   | 🚧                  |
+| enrollment                | 🚧                   | 🚧                  |
 
 🚧 - Enrollment is a one-time thing, barely suitable in Terraform world. Config-type is just beyond the project scope(for now at least).  
 ✅ - Entity could be fully controlled via a Terraform provider, and that both `one` and `many` datasources are ready to be used.  
