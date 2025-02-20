@@ -1,20 +1,20 @@
+<a href="https://terraform.io">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/refs/heads/main/.github/terraform_logo_dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/refs/heads/main/.github/terraform_logo_light.svg">
+    <img src=".github/terraform_logo_light.svg" alt="Terraform logo" title="Terraform" align="right" height="50">
+  </picture>
+</a>
+<a href="https://openziti.io">
+  <picture>
+    <img src="https://raw.githubusercontent.com/openziti/ziti-doc/main/docusaurus/static/img/ziti-logo-dark.svg" alt="Terraform logo" title="Terraform" align="right" height="36">
+  </picture>
+</a>
+
 # Terraform Provider for OpenZiti
+***Control your next generation software defined OpenZiti network using Terraform.***
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
-
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
-
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
-
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Developer](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
-
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
-
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
-
-
+The OpenZiti provider supports all essential resources to start controlling your network.
 ## Entities and their status of implementation
 
 | Entity                     | Data Source           | Resource            |
@@ -44,6 +44,14 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.22
+- [OpenZiti network](https://openziti.io) >= 1.2.1
+
+## Project Goals
+- Have a way to control a software-defined OpenZiti network using Terraform
+
+## Project Constraints
+- Backwards compatibility of a public interface between minor versions.
+
 
 ## Building The Provider
 
@@ -69,9 +77,30 @@ go mod tidy
 
 Then commit the changes to `go.mod` and `go.sum`.
 
-## Using the provider
+## Example using the provider
 
-Fill this in for each provider
+```terraform
+terraform {
+  required_providers {
+    ziti = {
+      source = "nenkoru/ziti"
+    }
+  }
+}
+
+provider "ziti" {
+  username            = "testadmin"
+  password        = "testadmin"
+  mgmt_endpoint            = "https://localhost:1280/edge/management/v1"
+}
+
+resource "ziti_host_config_v1" "simple_host" {
+    name = "simple_host.host.v1"
+    address = "localhost"
+    port    = 5432
+    protocol = "tcp"
+}
+```
 
 ## Developing the Provider
 
