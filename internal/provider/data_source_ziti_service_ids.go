@@ -29,8 +29,8 @@ type ZitiServiceIdsDataSource struct {
 // ZitiServiceIdsDataSourceModel describes the resource data model.
 
 type ZitiServiceIdsDataSourceModel struct {
-    IDS     types.List  `tfsdk:"ids"`
-	Filter                    types.String `tfsdk:"filter"`
+	IDS    types.List   `tfsdk:"ids"`
+	Filter types.String `tfsdk:"filter"`
 }
 
 func (d *ZitiServiceIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -38,7 +38,7 @@ func (d *ZitiServiceIdsDataSource) Metadata(ctx context.Context, req datasource.
 }
 
 func (d *ZitiServiceIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = CommonIdsDataSourceSchema
+	resp.Schema = CommonIdsDataSourceSchema
 }
 
 func (d *ZitiServiceIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -61,7 +61,6 @@ func (d *ZitiServiceIdsDataSource) Configure(ctx context.Context, req datasource
 	d.client = client
 }
 
-
 func (d *ZitiServiceIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiServiceIdsDataSourceModel
 
@@ -72,17 +71,16 @@ func (d *ZitiServiceIdsDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
+	params := service.NewListServicesParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
 
-    params := service.NewListServicesParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-
-    filter := state.Filter.ValueString()
-    params.Filter = &filter
-    data, err := d.client.API.Service.ListServices(params, nil)
-    if err != nil {
+	filter := state.Filter.ValueString()
+	params.Filter = &filter
+	data, err := d.client.API.Service.ListServices(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -92,25 +90,24 @@ func (d *ZitiServiceIdsDataSource) Read(ctx context.Context, req datasource.Read
 	}
 
 	serviceLists := data.Payload.Data
-    if len(serviceLists) == 0 {
-        resp.Diagnostics.AddError(
+	if len(serviceLists) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    var ids []string
-    for _, serviceList := range serviceLists {
-        ids = append(ids, *serviceList.ID)
-    }
+	var ids []string
+	for _, serviceList := range serviceLists {
+		ids = append(ids, *serviceList.ID)
+	}
 
-    idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
-    state.IDS = idsList
+	idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
+	state.IDS = idsList
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
-

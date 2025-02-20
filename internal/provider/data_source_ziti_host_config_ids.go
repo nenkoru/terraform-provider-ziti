@@ -9,9 +9,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/openziti/sdk-golang/edge-apis"
 	"github.com/openziti/edge-api/rest_management_api_client/config"
 	"github.com/openziti/edge-api/rest_util"
+	"github.com/openziti/sdk-golang/edge-apis"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -28,9 +28,9 @@ type ZitiHostConfigIdsDataSource struct {
 
 // ZitiHostConfigIdsDataSourceModel describes the data source data model.
 type ZitiHostConfigIdsDataSourceModel struct {
-	Filter                    types.String `tfsdk:"filter"`
+	Filter types.String `tfsdk:"filter"`
 
-    IDS     types.List  `tfsdk:"ids"`
+	IDS types.List `tfsdk:"ids"`
 }
 
 func (d *ZitiHostConfigIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -38,7 +38,7 @@ func (d *ZitiHostConfigIdsDataSource) Metadata(ctx context.Context, req datasour
 }
 
 func (d *ZitiHostConfigIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = CommonIdsDataSourceSchema
+	resp.Schema = CommonIdsDataSourceSchema
 }
 
 func (r *ZitiHostConfigIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -61,7 +61,6 @@ func (r *ZitiHostConfigIdsDataSource) Configure(ctx context.Context, req datasou
 	r.client = client
 }
 
-
 func (d *ZitiHostConfigIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiHostConfigIdsDataSourceModel
 
@@ -72,19 +71,18 @@ func (d *ZitiHostConfigIdsDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
+	params := config.NewListConfigsParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
 
-    params := config.NewListConfigsParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
+	filter := state.Filter.ValueString()
+	filter = filter + " and type = \"NH5p4FpGR\"" //host.v1 config
+	params.Filter = &filter
 
-    filter := state.Filter.ValueString()
-    filter = filter + " and type = \"NH5p4FpGR\"" //host.v1 config
-    params.Filter = &filter
-
-    data, err := d.client.API.Config.ListConfigs(params, nil)
-    if err != nil {
+	data, err := d.client.API.Config.ListConfigs(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -94,23 +92,23 @@ func (d *ZitiHostConfigIdsDataSource) Read(ctx context.Context, req datasource.R
 	}
 
 	configLists := data.Payload.Data
-    if len(configLists) == 0 {
-        resp.Diagnostics.AddError(
+	if len(configLists) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
-    var ids []string
-    for _, configList := range configLists {
-        ids = append(ids, *configList.ID)
-    }
+	var ids []string
+	for _, configList := range configLists {
+		ids = append(ids, *configList.ID)
+	}
 
-    idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
+	idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
 
-    state.IDS = idsList
+	state.IDS = idsList
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

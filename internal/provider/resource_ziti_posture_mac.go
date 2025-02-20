@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-    //"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,8 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/openziti/edge-api/rest_management_api_client/posture_checks"
@@ -38,14 +37,13 @@ type ZitiPostureMacAddressesResource struct {
 
 // ZitiPostureMacAddressesResourceModel describes the resource data model.
 type ZitiPostureMacAddressesResourceModel struct {
-	ID                     types.String `tfsdk:"id"`
+	ID types.String `tfsdk:"id"`
 
-	Name                   types.String `tfsdk:"name"`
-    RoleAttributes  types.List  `tfsdk:"role_attributes"`
-    Tags    types.Map    `tfsdk:"tags"`
-    MacAddresses types.List `tfsdk:"mac_addresses"`
+	Name           types.String `tfsdk:"name"`
+	RoleAttributes types.List   `tfsdk:"role_attributes"`
+	Tags           types.Map    `tfsdk:"tags"`
+	MacAddresses   types.List   `tfsdk:"mac_addresses"`
 }
-
 
 func (r *ZitiPostureMacAddressesResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_posture_check_mac_addresses"
@@ -56,10 +54,10 @@ func (r *ZitiPostureMacAddressesResource) Schema(ctx context.Context, req resour
 		MarkdownDescription: "A resource to define a host.v1 config of Ziti",
 
 		Attributes: map[string]schema.Attribute{
-            "id": schema.StringAttribute{
+			"id": schema.StringAttribute{
 				MarkdownDescription: "Name of the service",
 				Computed:            true,
-                PlanModifiers: []planmodifier.String{
+				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -67,24 +65,24 @@ func (r *ZitiPostureMacAddressesResource) Schema(ctx context.Context, req resour
 				MarkdownDescription: "Name of the service",
 				Required:            true,
 			},
-            "mac_addresses": schema.ListAttribute{
+			"mac_addresses": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "A list of mac addresses",
 				Required:            true,
 			},
-            "role_attributes": schema.ListAttribute{
+			"role_attributes": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "A list of role attributes",
 				Optional:            true,
 				Computed:            true,
 				Default:             listdefault.StaticValue(types.ListNull(types.StringType)),
 			},
-            "tags": schema.MapAttribute{
+			"tags": schema.MapAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "Tags of the service.",
 				Optional:            true,
-                Computed:   true,
-                Default:    mapdefault.StaticValue(types.MapNull(types.StringType)),
+				Computed:            true,
+				Default:             mapdefault.StaticValue(types.MapNull(types.StringType)),
 			},
 		},
 	}
@@ -120,18 +118,18 @@ func (r *ZitiPostureMacAddressesResource) Create(ctx context.Context, req resour
 		return
 	}
 
-    var roleAttributes rest_model.Attributes = ElementsToListOfStrings(plan.RoleAttributes.Elements())
+	var roleAttributes rest_model.Attributes = ElementsToListOfStrings(plan.RoleAttributes.Elements())
 
 	name := plan.Name.ValueString()
-    tags := TagsFromAttributes(plan.Tags.Elements())
+	tags := TagsFromAttributes(plan.Tags.Elements())
 	postureCheckCreate := rest_model.PostureCheckMacAddressCreate{
-        MacAddresses:  ElementsToListOfStrings(plan.MacAddresses.Elements()),
+		MacAddresses: ElementsToListOfStrings(plan.MacAddresses.Elements()),
 	}
-    postureCheckCreate.SetName(&name)
-    postureCheckCreate.SetRoleAttributes(&roleAttributes)
-    postureCheckCreate.SetTags(tags)
+	postureCheckCreate.SetName(&name)
+	postureCheckCreate.SetRoleAttributes(&roleAttributes)
+	postureCheckCreate.SetTags(tags)
 	params := posture_checks.NewCreatePostureCheckParams()
-    
+
 	params.PostureCheck = &postureCheckCreate
 
 	tflog.Debug(ctx, "Assigned all the params. Making CreatePostureCheck req")
@@ -156,18 +154,18 @@ func (r *ZitiPostureMacAddressesResource) Create(ctx context.Context, req resour
 
 func (r *ZitiPostureMacAddressesResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ZitiPostureMacAddressesResourceModel
-    var newState ZitiPostureMacAddressesResourceModel
+	var newState ZitiPostureMacAddressesResourceModel
 
 	tflog.Info(ctx, "Reading Ziti Edge Posture Check from API")
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-    if resp.Diagnostics.HasError() {
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	params := posture_checks.NewDetailPostureCheckParams()
-    params.ID = state.ID.ValueString()
-    data, err := r.client.API.PostureChecks.DetailPostureCheck(params, nil)
+	params.ID = state.ID.ValueString()
+	data, err := r.client.API.PostureChecks.DetailPostureCheck(params, nil)
 	if _, ok := err.(*posture_checks.DetailPostureCheckNotFound); ok {
 		resp.State.RemoveResource(ctx)
 		return
@@ -178,21 +176,21 @@ func (r *ZitiPostureMacAddressesResource) Read(ctx context.Context, req resource
 			"Could not read Ziti Posture Check ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 	}
-    if resp.Diagnostics.HasError() {
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    posture_check, _ := data.Payload.Data().(*rest_model.PostureCheckMacAddressDetail)
-    name := posture_check.Name()
+	posture_check, _ := data.Payload.Data().(*rest_model.PostureCheckMacAddressDetail)
+	name := posture_check.Name()
 	newState.Name = types.StringValue(*name)
 
-    newState.Tags, _ = NativeMapToTerraformMap(ctx, types.StringType, posture_check.Tags().SubTags)
-    newState.RoleAttributes, _ = NativeListToTerraformTypedList(ctx, types.StringType, []string(*posture_check.RoleAttributes()))
+	newState.Tags, _ = NativeMapToTerraformMap(ctx, types.StringType, posture_check.Tags().SubTags)
+	newState.RoleAttributes, _ = NativeListToTerraformTypedList(ctx, types.StringType, []string(*posture_check.RoleAttributes()))
 
-    newState.MacAddresses, _ = NativeListToTerraformTypedList(ctx, types.StringType, posture_check.MacAddresses)
-    
-    newState.ID = state.ID
-    state = newState
+	newState.MacAddresses, _ = NativeListToTerraformTypedList(ctx, types.StringType, posture_check.MacAddresses)
+
+	newState.ID = state.ID
+	state = newState
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
@@ -208,20 +206,20 @@ func (r *ZitiPostureMacAddressesResource) Update(ctx context.Context, req resour
 		return
 	}
 
-    var roleAttributes rest_model.Attributes = ElementsToListOfStrings(plan.RoleAttributes.Elements())
+	var roleAttributes rest_model.Attributes = ElementsToListOfStrings(plan.RoleAttributes.Elements())
 
 	name := plan.Name.ValueString()
-    tags := TagsFromAttributes(plan.Tags.Elements())
+	tags := TagsFromAttributes(plan.Tags.Elements())
 
-    postureCheckUpdate := rest_model.PostureCheckMacAddressPatch{
-        MacAddresses:  ElementsToListOfStrings(plan.MacAddresses.Elements()),
+	postureCheckUpdate := rest_model.PostureCheckMacAddressPatch{
+		MacAddresses: ElementsToListOfStrings(plan.MacAddresses.Elements()),
 	}
-    postureCheckUpdate.SetName(name)
-    postureCheckUpdate.SetRoleAttributes(&roleAttributes)
-    postureCheckUpdate.SetTags(tags)
+	postureCheckUpdate.SetName(name)
+	postureCheckUpdate.SetRoleAttributes(&roleAttributes)
+	postureCheckUpdate.SetTags(tags)
 	params := posture_checks.NewPatchPostureCheckParams()
-    
-    params.ID = plan.ID.ValueString()
+
+	params.ID = plan.ID.ValueString()
 	params.PostureCheck = &postureCheckUpdate
 
 	tflog.Debug(ctx, "Assigned all the params. Making UpdatePostureCheck req")
@@ -249,13 +247,13 @@ func (r *ZitiPostureMacAddressesResource) Delete(ctx context.Context, req resour
 	tflog.Debug(ctx, "Deleting Ziti Service Edge Router Policy")
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
-    if resp.Diagnostics.HasError() {
+	if resp.Diagnostics.HasError() {
 		return
 	}
-    params := posture_checks.NewDeletePostureCheckParams()
+	params := posture_checks.NewDeletePostureCheckParams()
 	params.ID = plan.ID.ValueString()
 
-    _, err := r.client.API.PostureChecks.DeletePostureCheck(params, nil)
+	_, err := r.client.API.PostureChecks.DeletePostureCheck(params, nil)
 	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
@@ -264,14 +262,13 @@ func (r *ZitiPostureMacAddressesResource) Delete(ctx context.Context, req resour
 		)
 	}
 
-    if resp.Diagnostics.HasError() {
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    resp.State.RemoveResource(ctx)
+	resp.State.RemoveResource(ctx)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
-
 
 func (r *ZitiPostureMacAddressesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)

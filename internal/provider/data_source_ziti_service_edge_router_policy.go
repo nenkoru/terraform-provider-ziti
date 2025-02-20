@@ -7,10 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/openziti/edge-api/rest_management_api_client/service_edge_router_policy"
 	"github.com/openziti/edge-api/rest_util"
@@ -32,15 +32,15 @@ type ZitiServiceEdgeRouterPolicyDataSource struct {
 // ZitiServiceEdgeRouterPolicyDataSourceModel describes the resource data model.
 
 type ZitiServiceEdgeRouterPolicyDataSourceModel struct {
-	ID                     types.String `tfsdk:"id"`
-	Filter                    types.String `tfsdk:"filter"`
-    MostRecent  types.Bool  `tfsdk:"most_recent"`
-	Name                   types.String `tfsdk:"name"`
+	ID         types.String `tfsdk:"id"`
+	Filter     types.String `tfsdk:"filter"`
+	MostRecent types.Bool   `tfsdk:"most_recent"`
+	Name       types.String `tfsdk:"name"`
 
-    EdgeRouterRoles   types.List  `tfsdk:"edge_router_roles"`
-    ServiceRoles   types.List  `tfsdk:"service_roles"`
-    Semantic  types.String  `tfsdk:"semantic"`
-    Tags    types.Map    `tfsdk:"tags"`
+	EdgeRouterRoles types.List   `tfsdk:"edge_router_roles"`
+	ServiceRoles    types.List   `tfsdk:"service_roles"`
+	Semantic        types.String `tfsdk:"semantic"`
+	Tags            types.Map    `tfsdk:"tags"`
 }
 
 func (d *ZitiServiceEdgeRouterPolicyDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
@@ -53,7 +53,7 @@ func (d *ZitiServiceEdgeRouterPolicyDataSource) ConfigValidators(ctx context.Con
 		datasourcevalidator.Conflicting(
 			path.MatchRoot("id"),
 			path.MatchRoot("filter"),
-            path.MatchRoot("name"),
+			path.MatchRoot("name"),
 		),
 	}
 }
@@ -66,43 +66,43 @@ func (d *ZitiServiceEdgeRouterPolicyDataSource) Schema(ctx context.Context, req 
 		MarkdownDescription: "A datasource to define a service edge router policy of Ziti",
 
 		Attributes: map[string]schema.Attribute{
-            "filter": schema.StringAttribute{
+			"filter": schema.StringAttribute{
 				MarkdownDescription: "ZitiQl filter query",
 				Optional:            true,
 			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Example identifier",
 				Computed:            true,
-                Optional: true,
+				Optional:            true,
 			},
-            "name": schema.StringAttribute{
+			"name": schema.StringAttribute{
 				Computed:            true,
-                Optional:   true,
+				Optional:            true,
 				MarkdownDescription: "Name of a config",
 			},
-            "most_recent": schema.BoolAttribute{
+			"most_recent": schema.BoolAttribute{
 				MarkdownDescription: "A flag which controls whether to get the first result from the filter query",
-                Optional: true,
+				Optional:            true,
 			},
 
-            "edge_router_roles": schema.ListAttribute{
+			"edge_router_roles": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "Edge router roles list.",
 				Computed:            true,
 			},
-            "service_roles": schema.ListAttribute{
+			"service_roles": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "Service roles list.",
 				Computed:            true,
 			},
-            "semantic": schema.StringAttribute{
+			"semantic": schema.StringAttribute{
 				MarkdownDescription: "Semantic for posture checks of the service",
-                Computed: true,
+				Computed:            true,
 			},
-            "tags": schema.MapAttribute{
+			"tags": schema.MapAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "Tags of the service.",
-                Computed:   true,
+				Computed:            true,
 			},
 		},
 	}
@@ -128,7 +128,6 @@ func (d *ZitiServiceEdgeRouterPolicyDataSource) Configure(ctx context.Context, r
 	d.client = client
 }
 
-
 func (d *ZitiServiceEdgeRouterPolicyDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiServiceEdgeRouterPolicyDataSourceModel
 
@@ -139,24 +138,23 @@ func (d *ZitiServiceEdgeRouterPolicyDataSource) Read(ctx context.Context, req da
 		return
 	}
 
+	params := service_edge_router_policy.NewListServiceEdgeRouterPoliciesParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
+	filter := ""
+	if state.ID.ValueString() != "" {
+		filter = "id = \"" + state.ID.ValueString() + "\""
+	} else if state.Name.ValueString() != "" {
+		filter = "name = \"" + state.Name.ValueString() + "\""
+	} else {
+		filter = state.Filter.ValueString()
+	}
 
-    params := service_edge_router_policy.NewListServiceEdgeRouterPoliciesParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-    filter := ""
-    if state.ID.ValueString() != "" {
-        filter = "id = \"" + state.ID.ValueString() + "\""
-    } else if state.Name.ValueString() != "" {
-        filter = "name = \"" + state.Name.ValueString() + "\""
-    } else {
-        filter = state.Filter.ValueString()
-    }
-
-    params.Filter = &filter
-    data, err := d.client.API.ServiceEdgeRouterPolicy.ListServiceEdgeRouterPolicies(params, nil)
-    if err != nil {
+	params.Filter = &filter
+	data, err := d.client.API.ServiceEdgeRouterPolicy.ListServiceEdgeRouterPolicies(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -166,51 +164,50 @@ func (d *ZitiServiceEdgeRouterPolicyDataSource) Read(ctx context.Context, req da
 	}
 
 	serviceEdgeRouterPolicies := data.Payload.Data
-    if len(serviceEdgeRouterPolicies) > 1 && !state.MostRecent.ValueBool() {
-        resp.Diagnostics.AddError(
+	if len(serviceEdgeRouterPolicies) > 1 && !state.MostRecent.ValueBool() {
+		resp.Diagnostics.AddError(
 			"Multiple items returned from API upon filter execution!",
-			"Try to narrow down the filter expression, or set most_recent to true to get the first result: " + filter,
+			"Try to narrow down the filter expression, or set most_recent to true to get the first result: "+filter,
 		)
-    }
-    if len(serviceEdgeRouterPolicies) == 0 {
-        resp.Diagnostics.AddError(
+	}
+	if len(serviceEdgeRouterPolicies) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
-    serviceEdgeRouterPolicy := serviceEdgeRouterPolicies[0]
+	serviceEdgeRouterPolicy := serviceEdgeRouterPolicies[0]
 
 	name := serviceEdgeRouterPolicy.Name
 	state.Name = types.StringValue(*name)
-    state.ID = types.StringValue(*serviceEdgeRouterPolicy.ID)
+	state.ID = types.StringValue(*serviceEdgeRouterPolicy.ID)
 
-    if len(serviceEdgeRouterPolicy.EdgeRouterRoles) > 0 {
-        edgeRouterRoles, _ := types.ListValueFrom(ctx, types.StringType, serviceEdgeRouterPolicy.EdgeRouterRoles)
-        state.EdgeRouterRoles = edgeRouterRoles
-    } else {
-        state.EdgeRouterRoles = types.ListNull(types.StringType)
-    }
+	if len(serviceEdgeRouterPolicy.EdgeRouterRoles) > 0 {
+		edgeRouterRoles, _ := types.ListValueFrom(ctx, types.StringType, serviceEdgeRouterPolicy.EdgeRouterRoles)
+		state.EdgeRouterRoles = edgeRouterRoles
+	} else {
+		state.EdgeRouterRoles = types.ListNull(types.StringType)
+	}
 
-    if len(serviceEdgeRouterPolicy.ServiceRoles) > 0 {
-        serviceRoles, _ := types.ListValueFrom(ctx, types.StringType, serviceEdgeRouterPolicy.ServiceRoles)
-        state.ServiceRoles = serviceRoles
-    } else {
-        state.ServiceRoles = types.ListNull(types.StringType)
-    }
+	if len(serviceEdgeRouterPolicy.ServiceRoles) > 0 {
+		serviceRoles, _ := types.ListValueFrom(ctx, types.StringType, serviceEdgeRouterPolicy.ServiceRoles)
+		state.ServiceRoles = serviceRoles
+	} else {
+		state.ServiceRoles = types.ListNull(types.StringType)
+	}
 
-    if len(serviceEdgeRouterPolicy.BaseEntity.Tags.SubTags) != 0 {
-        tags, diag := types.MapValueFrom(ctx, types.StringType, serviceEdgeRouterPolicy.BaseEntity.Tags.SubTags)
-        resp.Diagnostics = append(resp.Diagnostics, diag...)
-        state.Tags = tags
-    } else {
-        state.Tags = types.MapNull(types.StringType)
-    }
+	if len(serviceEdgeRouterPolicy.BaseEntity.Tags.SubTags) != 0 {
+		tags, diag := types.MapValueFrom(ctx, types.StringType, serviceEdgeRouterPolicy.BaseEntity.Tags.SubTags)
+		resp.Diagnostics = append(resp.Diagnostics, diag...)
+		state.Tags = tags
+	} else {
+		state.Tags = types.MapNull(types.StringType)
+	}
 
-    state.Semantic = types.StringValue(string(*serviceEdgeRouterPolicy.Semantic))
+	state.Semantic = types.StringValue(string(*serviceEdgeRouterPolicy.Semantic))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
-

@@ -11,11 +11,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	//"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -59,14 +58,14 @@ var DialOptionsModel = types.ObjectType{
 }
 
 type ZitiInterceptConfigResourceModel struct {
-	Name        types.String `tfsdk:"name"`
-	Addresses   types.List   `tfsdk:"addresses"`
-	DialOptions types.Object `tfsdk:"dial_options"`
-	PortRanges  types.List   `tfsdk:"port_ranges"`
-	Protocols   types.List   `tfsdk:"protocols"`
-	SourceIP    types.String `tfsdk:"source_ip"`
-	ConfigTypeId           types.String `tfsdk:"config_type_id"`
-	ID                     types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Addresses    types.List   `tfsdk:"addresses"`
+	DialOptions  types.Object `tfsdk:"dial_options"`
+	PortRanges   types.List   `tfsdk:"port_ranges"`
+	Protocols    types.List   `tfsdk:"protocols"`
+	SourceIP     types.String `tfsdk:"source_ip"`
+	ConfigTypeId types.String `tfsdk:"config_type_id"`
+	ID           types.String `tfsdk:"id"`
 }
 
 func (r *ZitiInterceptConfigResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -135,7 +134,7 @@ func (r *ZitiInterceptConfigResource) Schema(ctx context.Context, req resource.S
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-            "source_ip": schema.StringAttribute{
+			"source_ip": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "SourceIp of a config",
 			},
@@ -179,7 +178,6 @@ func (r *ZitiInterceptConfigResource) Configure(ctx context.Context, req resourc
 	r.client = client
 }
 
-
 type DialOptionsDTO struct {
 	ConnectTimeoutSeconds *int32  `json:"connectTimeoutSeconds,omitempty"`
 	Identity              *string `json:"identity,omitempty"`
@@ -205,9 +203,9 @@ func AttributesToDialOptionsStruct(ctx context.Context, attr map[string]attr.Val
 func (dto *InterceptConfigDTO) ConvertToZitiResourceModel(ctx context.Context) ZitiInterceptConfigResourceModel {
 
 	res := ZitiInterceptConfigResourceModel{
-        Addresses: convertStringList(ctx, dto.Addresses, types.StringType),
-        Protocols: convertStringList(ctx, dto.Protocols, types.StringType),
-		SourceIP:         types.StringPointerValue(dto.SourceIP),
+		Addresses: convertStringList(ctx, dto.Addresses, types.StringType),
+		Protocols: convertStringList(ctx, dto.Protocols, types.StringType),
+		SourceIP:  types.StringPointerValue(dto.SourceIP),
 	}
 
 	if dto.PortRanges != nil {

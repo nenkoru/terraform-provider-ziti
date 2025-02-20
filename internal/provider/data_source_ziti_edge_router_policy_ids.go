@@ -29,8 +29,8 @@ type ZitiEdgeRouterPolicyIdsDataSource struct {
 // ZitiEdgeRouterPolicyIdsDataSourceModel describes the resource data model.
 
 type ZitiEdgeRouterPolicyIdsDataSourceModel struct {
-    IDS     types.List  `tfsdk:"ids"`
-	Filter                    types.String `tfsdk:"filter"`
+	IDS    types.List   `tfsdk:"ids"`
+	Filter types.String `tfsdk:"filter"`
 }
 
 func (d *ZitiEdgeRouterPolicyIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -38,7 +38,7 @@ func (d *ZitiEdgeRouterPolicyIdsDataSource) Metadata(ctx context.Context, req da
 }
 
 func (d *ZitiEdgeRouterPolicyIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = CommonIdsDataSourceSchema
+	resp.Schema = CommonIdsDataSourceSchema
 }
 
 func (d *ZitiEdgeRouterPolicyIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -61,7 +61,6 @@ func (d *ZitiEdgeRouterPolicyIdsDataSource) Configure(ctx context.Context, req d
 	d.client = client
 }
 
-
 func (d *ZitiEdgeRouterPolicyIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiEdgeRouterPolicyIdsDataSourceModel
 
@@ -72,17 +71,16 @@ func (d *ZitiEdgeRouterPolicyIdsDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
+	params := edge_router_policy.NewListEdgeRouterPoliciesParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
 
-    params := edge_router_policy.NewListEdgeRouterPoliciesParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-
-    filter := state.Filter.ValueString()
-    params.Filter = &filter
-    data, err := d.client.API.EdgeRouterPolicy.ListEdgeRouterPolicies(params, nil)
-    if err != nil {
+	filter := state.Filter.ValueString()
+	params.Filter = &filter
+	data, err := d.client.API.EdgeRouterPolicy.ListEdgeRouterPolicies(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Service Edge Router Policies from API",
@@ -92,25 +90,24 @@ func (d *ZitiEdgeRouterPolicyIdsDataSource) Read(ctx context.Context, req dataso
 	}
 
 	serviceEdgeRouterPolicies := data.Payload.Data
-    if len(serviceEdgeRouterPolicies) == 0 {
-        resp.Diagnostics.AddError(
+	if len(serviceEdgeRouterPolicies) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    var ids []string
-    for _, serviceEdgeRouterPolicy := range serviceEdgeRouterPolicies {
-        ids = append(ids, *serviceEdgeRouterPolicy.ID)
-    }
+	var ids []string
+	for _, serviceEdgeRouterPolicy := range serviceEdgeRouterPolicies {
+		ids = append(ids, *serviceEdgeRouterPolicy.ID)
+	}
 
-    idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
-    state.IDS = idsList
+	idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
+	state.IDS = idsList
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
-

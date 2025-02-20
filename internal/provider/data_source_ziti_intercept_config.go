@@ -7,14 +7,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/openziti/sdk-golang/edge-apis"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/openziti/edge-api/rest_management_api_client/config"
 	"github.com/openziti/edge-api/rest_util"
+	"github.com/openziti/sdk-golang/edge-apis"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -31,19 +31,17 @@ type ZitiInterceptConfigDataSource struct {
 
 // ZitiInterceptConfigDataSourceModel describes the data source data model.
 type ZitiInterceptConfigDataSourceModel struct {
-	ID                     types.String `tfsdk:"id"`
-	Filter                    types.String `tfsdk:"filter"`
-    MostRecent  types.Bool  `tfsdk:"most_recent"`
+	ID         types.String `tfsdk:"id"`
+	Filter     types.String `tfsdk:"filter"`
+	MostRecent types.Bool   `tfsdk:"most_recent"`
 
-    Name        types.String `tfsdk:"name"`
-	Addresses   types.List   `tfsdk:"addresses"`
-	DialOptions types.Object `tfsdk:"dial_options"`
-	PortRanges  types.List   `tfsdk:"port_ranges"`
-	Protocols   types.List   `tfsdk:"protocols"`
-	SourceIP    types.String `tfsdk:"source_ip"`
-	ConfigTypeID           types.String `tfsdk:"config_type_id"`
-
-
+	Name         types.String `tfsdk:"name"`
+	Addresses    types.List   `tfsdk:"addresses"`
+	DialOptions  types.Object `tfsdk:"dial_options"`
+	PortRanges   types.List   `tfsdk:"port_ranges"`
+	Protocols    types.List   `tfsdk:"protocols"`
+	SourceIP     types.String `tfsdk:"source_ip"`
+	ConfigTypeID types.String `tfsdk:"config_type_id"`
 }
 
 func (r *ZitiInterceptConfigDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
@@ -56,7 +54,7 @@ func (r *ZitiInterceptConfigDataSource) ConfigValidators(ctx context.Context) []
 		datasourcevalidator.Conflicting(
 			path.MatchRoot("id"),
 			path.MatchRoot("filter"),
-            path.MatchRoot("name"),
+			path.MatchRoot("name"),
 		),
 	}
 }
@@ -77,16 +75,16 @@ func (d *ZitiInterceptConfigDataSource) Schema(ctx context.Context, req datasour
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Example identifier",
 				Computed:            true,
-                Optional: true,
+				Optional:            true,
 			},
-            "name": schema.StringAttribute{
+			"name": schema.StringAttribute{
 				Computed:            true,
-                Optional:   true,
+				Optional:            true,
 				MarkdownDescription: "Name of a config",
 			},
-            "most_recent": schema.BoolAttribute{
+			"most_recent": schema.BoolAttribute{
 				MarkdownDescription: "A flag which controls whether to get the first result from the filter query",
-                Optional: true,
+				Optional:            true,
 			},
 
 			"addresses": schema.ListAttribute{
@@ -124,12 +122,12 @@ func (d *ZitiInterceptConfigDataSource) Schema(ctx context.Context, req datasour
 				},
 				MarkdownDescription: "An array of allowed ports that could be forwarded.",
 			},
-			
+
 			"config_type_id": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "configTypeId",
 			},
-            "source_ip": schema.StringAttribute{
+			"source_ip": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "configTypeId",
 			},
@@ -157,17 +155,16 @@ func (r *ZitiInterceptConfigDataSource) Configure(ctx context.Context, req datas
 	r.client = client
 }
 
-
 func resourceModelToDataSourceModel(resourceModel ZitiInterceptConfigResourceModel) ZitiInterceptConfigDataSourceModel {
-    dataSourceModel := ZitiInterceptConfigDataSourceModel{
-        Name: resourceModel.Name,
-        Addresses:   resourceModel.Addresses,
-        DialOptions:  resourceModel.DialOptions,
-        PortRanges:  resourceModel.PortRanges,
-        Protocols:   resourceModel.Protocols,
-        SourceIP: resourceModel.SourceIP,
-    }
-    return dataSourceModel
+	dataSourceModel := ZitiInterceptConfigDataSourceModel{
+		Name:        resourceModel.Name,
+		Addresses:   resourceModel.Addresses,
+		DialOptions: resourceModel.DialOptions,
+		PortRanges:  resourceModel.PortRanges,
+		Protocols:   resourceModel.Protocols,
+		SourceIP:    resourceModel.SourceIP,
+	}
+	return dataSourceModel
 
 }
 func (d *ZitiInterceptConfigDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -180,25 +177,24 @@ func (d *ZitiInterceptConfigDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
+	params := config.NewListConfigsParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
+	filter := ""
+	if state.ID.ValueString() != "" {
+		filter = "id = \"" + state.ID.ValueString() + "\""
+	} else if state.Name.ValueString() != "" {
+		filter = "name = \"" + state.Name.ValueString() + "\""
+	} else {
+		filter = state.Filter.ValueString()
+	}
 
-    params := config.NewListConfigsParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-    filter := ""
-    if state.ID.ValueString() != "" {
-        filter = "id = \"" + state.ID.ValueString() + "\""
-    } else if state.Name.ValueString() != "" {
-        filter = "name = \"" + state.Name.ValueString() + "\""
-    } else {
-        filter = state.Filter.ValueString()
-    }
-
-    filter = filter + " and type = \"g7cIWbcGg\"" //intercept.v1 config
-    params.Filter = &filter
-    data, err := d.client.API.Config.ListConfigs(params, nil)
-    if err != nil {
+	filter = filter + " and type = \"g7cIWbcGg\"" //intercept.v1 config
+	params.Filter = &filter
+	data, err := d.client.API.Config.ListConfigs(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -208,30 +204,30 @@ func (d *ZitiInterceptConfigDataSource) Read(ctx context.Context, req datasource
 	}
 
 	configLists := data.Payload.Data
-    if len(configLists) > 1 && !state.MostRecent.ValueBool() {
-        resp.Diagnostics.AddError(
+	if len(configLists) > 1 && !state.MostRecent.ValueBool() {
+		resp.Diagnostics.AddError(
 			"Multiple items returned from API upon filter execution!",
-			"Try to narrow down the filter expression, or set most_recent to true to get the first result: " + filter,
+			"Try to narrow down the filter expression, or set most_recent to true to get the first result: "+filter,
 		)
-    }
-    if len(configLists) == 0 {
-        resp.Diagnostics.AddError(
+	}
+	if len(configLists) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
-    configList := configLists[0]
+	configList := configLists[0]
 	responseData, ok := configList.Data.(map[string]interface{})
-    if !ok {
+	if !ok {
 		resp.Diagnostics.AddError(
 			"Error casting a response from a ziti controller to a dictionary",
 			"Could not cast a response from ziti to a dictionary",
 		)
 	}
-    if resp.Diagnostics.HasError() {
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -239,12 +235,12 @@ func (d *ZitiInterceptConfigDataSource) Read(ctx context.Context, req datasource
 	GenericFromObject(responseData, &interceptConfigDto)
 
 	resourceState := interceptConfigDto.ConvertToZitiResourceModel(ctx)
-    newState := resourceModelToDataSourceModel(resourceState)
+	newState := resourceModelToDataSourceModel(resourceState)
 
-    newState.ID = types.StringValue(*configList.BaseEntity.ID)
-    newState.Filter = state.Filter
-    newState.MostRecent = state.MostRecent
-    newState.ConfigTypeID = types.StringValue(*configList.ConfigTypeID)
+	newState.ID = types.StringValue(*configList.BaseEntity.ID)
+	newState.Filter = state.Filter
+	newState.MostRecent = state.MostRecent
+	newState.ConfigTypeID = types.StringValue(*configList.ConfigTypeID)
 	// Save data into Terraform state
 	state = newState
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

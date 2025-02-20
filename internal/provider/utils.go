@@ -4,19 +4,18 @@
 package provider
 
 import (
-    "context"
-	"reflect"
+	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
-	"github.com/iancoleman/strcase"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/openziti/edge-api/rest_model"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"encoding/json"
-
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/iancoleman/strcase"
+	"github.com/openziti/edge-api/rest_model"
 )
 
 func JsonStructToObject(ctx context.Context, s interface{}, makeZeroNil bool, ignoreZero bool) (map[string]interface{}, error) {
@@ -106,16 +105,16 @@ func AttributesToNativeTypes(ctx context.Context, attrs map[string]attr.Value) m
 			result[key] = val.ValueString()
 		} else if val, ok := value.(types.Int32); ok {
 			result[key] = val.ValueInt32()
-        } else if val, ok := value.(types.Int64); ok {
+		} else if val, ok := value.(types.Int64); ok {
 			result[key] = val.ValueInt64()
 		} else if val, ok := value.(types.Bool); ok {
 			result[key] = val.ValueBool()
-        } else if val, ok := value.(types.List); ok {
-            if val.ElementType(ctx) == types.StringType {
-                result[key] = ElementsToListOfStrings(val.Elements())
-            }
+		} else if val, ok := value.(types.List); ok {
+			if val.ElementType(ctx) == types.StringType {
+				result[key] = ElementsToListOfStrings(val.Elements())
+			}
 
-        }
+		}
 	}
 	return result
 
@@ -125,7 +124,7 @@ func NativeBasicTypedAttributesToTerraform(ctx context.Context, attrs map[string
 	result := make(map[string]attr.Value)
 
 	for targetAttrName, targetAttrType := range attrTypes {
-		value, _ := attrs[targetAttrName]
+		value := attrs[targetAttrName]
 		if targetAttrType == types.StringType {
 			if value == nil {
 				result[targetAttrName] = types.StringNull()
@@ -186,8 +185,8 @@ func IsZero[T comparable](v T) bool {
 	return v == *new(T)
 }
 
-func convertStringList(ctx context.Context, list *[]string, elemType attr.Type) (types.List) {
-    var result types.List
+func convertStringList(ctx context.Context, list *[]string, elemType attr.Type) types.List {
+	var result types.List
 
 	if list != nil && len(*list) > 0 {
 		result, _ = types.ListValueFrom(ctx, elemType, list)
@@ -197,62 +196,61 @@ func convertStringList(ctx context.Context, list *[]string, elemType attr.Type) 
 	return result
 }
 
-func GenericFromObject[T any](mapData map[string]interface{}, dto *T) error {
+func GenericFromObject[T any](mapData map[string]interface{}, dto *T) {
 	// Marshal the map to JSON
 	data, err := json.Marshal(mapData)
 	if err != nil {
-		return err
+		return
 	}
 
 	// Unmarshal the JSON into the provided dto
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return err
+		return
 	}
 
-	return nil
 }
 
 func NativeListToTerraformTypedList(ctx context.Context, tfType attr.Type, stringArray []string) (types.List, diag.Diagnostics) {
-    if len(stringArray) > 0 {
-        stringList, diag := types.ListValueFrom(ctx, tfType, stringArray)
-        return stringList, diag
-    } else {
-        return types.ListNull(tfType), nil
-    }
+	if len(stringArray) > 0 {
+		stringList, diag := types.ListValueFrom(ctx, tfType, stringArray)
+		return stringList, diag
+	} else {
+		return types.ListNull(tfType), nil
+	}
 
 }
 func NativeMapToTerraformMap(ctx context.Context, tfType attr.Type, mapData map[string]interface{}) (types.Map, diag.Diagnostics) {
-    if len(mapData) != 0 {
-        map_, diag := types.MapValueFrom(ctx, tfType, mapData)
-        return map_, diag
-    } else {
-        return types.MapNull(tfType), nil
-    }
+	if len(mapData) != 0 {
+		map_, diag := types.MapValueFrom(ctx, tfType, mapData)
+		return map_, diag
+	} else {
+		return types.MapNull(tfType), nil
+	}
 }
 
 func TagsFromAttributes(mapData map[string]attr.Value) *rest_model.Tags {
-    var retTags *rest_model.Tags
-    retTags = &rest_model.Tags{}
-    retTags.SubTags = make(map[string]interface{}) // Initialize the map
-    for key, value := range mapData {
-        if val, ok := value.(types.String); ok {
-            retTags.SubTags[key] = val.ValueString()
-        }
-    }
-    if len(retTags.SubTags) == 0 {
-        retTags = nil
-    }
-    return retTags
+	var retTags *rest_model.Tags
+	retTags = &rest_model.Tags{}
+	retTags.SubTags = make(map[string]interface{}) // Initialize the map
+	for key, value := range mapData {
+		if val, ok := value.(types.String); ok {
+			retTags.SubTags[key] = val.ValueString()
+		}
+	}
+	if len(retTags.SubTags) == 0 {
+		retTags = nil
+	}
+	return retTags
 }
 
 func ElementsToListOfStrings(elements []attr.Value) []string {
-    var ret []string
-    for _, value := range elements {
-        if element, ok := value.(types.String); ok {
-            ret = append(ret, element.ValueString())
-        }
-    }
-    return ret
+	var ret []string
+	for _, value := range elements {
+		if element, ok := value.(types.String); ok {
+			ret = append(ret, element.ValueString())
+		}
+	}
+	return ret
 
 }
 func ElementsToListOfStructs[T any](ctx context.Context, elements []attr.Value) []T {
@@ -266,7 +264,7 @@ func ElementsToListOfStructs[T any](ctx context.Context, elements []attr.Value) 
 		var item T
 		if val, ok := v.(types.Object); ok {
 			attrsNative := AttributesToNativeTypes(ctx, val.Attributes())
-            attrsNative = convertKeysToCamel(attrsNative)
+			attrsNative = convertKeysToCamel(attrsNative)
 			GenericFromObject(attrsNative, &item)
 			result = append(result, item)
 		}
@@ -286,8 +284,9 @@ func ElementsToListOfStructsPointers[T any](ctx context.Context, elements []attr
 		var item T
 		if val, ok := v.(types.Object); ok {
 			attrsNative := AttributesToNativeTypes(ctx, val.Attributes())
-            attrsNative = convertKeysToCamel(attrsNative)
+			attrsNative = convertKeysToCamel(attrsNative)
 			GenericFromObject(attrsNative, &item)
+
 			result = append(result, &item)
 		}
 	}

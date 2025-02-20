@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/openziti/edge-api/rest_management_api_client/posture_checks"
-	"github.com/openziti/edge-api/rest_util"
 	"github.com/openziti/edge-api/rest_model"
+	"github.com/openziti/edge-api/rest_util"
 	"github.com/openziti/sdk-golang/edge-apis"
 )
 
@@ -30,8 +30,8 @@ type ZitiPostureMacAddressesIdsDataSource struct {
 // ZitiPostureMacAddressesIdsDataSourceModel describes the resource data model.
 
 type ZitiPostureMacAddressesIdsDataSourceModel struct {
-    IDS     types.List  `tfsdk:"ids"`
-	Filter                    types.String `tfsdk:"filter"`
+	IDS    types.List   `tfsdk:"ids"`
+	Filter types.String `tfsdk:"filter"`
 }
 
 func (d *ZitiPostureMacAddressesIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -39,7 +39,7 @@ func (d *ZitiPostureMacAddressesIdsDataSource) Metadata(ctx context.Context, req
 }
 
 func (d *ZitiPostureMacAddressesIdsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = CommonIdsDataSourceSchema
+	resp.Schema = CommonIdsDataSourceSchema
 }
 
 func (d *ZitiPostureMacAddressesIdsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -62,7 +62,6 @@ func (d *ZitiPostureMacAddressesIdsDataSource) Configure(ctx context.Context, re
 	d.client = client
 }
 
-
 func (d *ZitiPostureMacAddressesIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiPostureMacAddressesIdsDataSourceModel
 
@@ -73,17 +72,16 @@ func (d *ZitiPostureMacAddressesIdsDataSource) Read(ctx context.Context, req dat
 		return
 	}
 
+	params := posture_checks.NewListPostureChecksParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
 
-    params := posture_checks.NewListPostureChecksParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-
-    filter := state.Filter.ValueString()
-    params.Filter = &filter
-    data, err := d.client.API.PostureChecks.ListPostureChecks(params, nil)
-    if err != nil {
+	filter := state.Filter.ValueString()
+	params.Filter = &filter
+	data, err := d.client.API.PostureChecks.ListPostureChecks(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -93,27 +91,26 @@ func (d *ZitiPostureMacAddressesIdsDataSource) Read(ctx context.Context, req dat
 	}
 
 	postureChecks := data.Payload.Data()
-    if len(postureChecks) == 0 {
-        resp.Diagnostics.AddError(
+	if len(postureChecks) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    var ids []string
-    for _, postureCheck := range postureChecks {
-        if _, ok := postureCheck.(*rest_model.PostureCheckMacAddressDetail); ok {
-            ids = append(ids, *postureCheck.ID())
-        }
-    }
+	var ids []string
+	for _, postureCheck := range postureChecks {
+		if _, ok := postureCheck.(*rest_model.PostureCheckMacAddressDetail); ok {
+			ids = append(ids, *postureCheck.ID())
+		}
+	}
 
-    idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
-    state.IDS = idsList
+	idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
+	state.IDS = idsList
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
-

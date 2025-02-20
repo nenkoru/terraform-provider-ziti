@@ -220,7 +220,7 @@ func (p *ZitiProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 		}
 	} else {
-		certData, err := base64.StdEncoding.DecodeString(string(capool))
+		certData, err := base64.StdEncoding.DecodeString(capool)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("capool"),
@@ -290,19 +290,19 @@ func (p *ZitiProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewZitiHostConfigResource,
 		NewZitiInterceptConfigResource,
 
-        NewZitiServiceResource,
-        NewZitiIdentityResource,
+		NewZitiServiceResource,
+		NewZitiIdentityResource,
 
-        NewZitiServicePolicyResource,
-        NewZitiServiceEdgeRouterPolicyResource,
-        NewZitiEdgeRouterPolicyResource,
+		NewZitiServicePolicyResource,
+		NewZitiServiceEdgeRouterPolicyResource,
+		NewZitiEdgeRouterPolicyResource,
 
-        NewZitiPostureMultiProcessResource,
-        NewZitiPostureProcessResource,
-        NewZitiPostureOperatingSystemResource,
-        NewZitiPostureMfaResource,
-        NewZitiPostureMacAddressesResource,
-        NewZitiPostureDomainsResource,
+		NewZitiPostureMultiProcessResource,
+		NewZitiPostureProcessResource,
+		NewZitiPostureOperatingSystemResource,
+		NewZitiPostureMfaResource,
+		NewZitiPostureMacAddressesResource,
+		NewZitiPostureDomainsResource,
 	}
 }
 
@@ -311,44 +311,41 @@ func (p *ZitiProvider) DataSources(ctx context.Context) []func() datasource.Data
 		NewZitiHostConfigDataSource,
 		NewZitiHostConfigIdsDataSource,
 
-        NewZitiInterceptConfigDataSource,
+		NewZitiInterceptConfigDataSource,
 		NewZitiInterceptConfigIdsDataSource,
 
-        NewZitiServiceDataSource,
-        NewZitiServiceIdsDataSource,
+		NewZitiServiceDataSource,
+		NewZitiServiceIdsDataSource,
 
-        NewZitiIdentityDataSource,
-        NewZitiIdentityIdsDataSource,
+		NewZitiIdentityDataSource,
+		NewZitiIdentityIdsDataSource,
 
-        NewZitiServicePolicyDataSource,
-        NewZitiServicePolicyIdsDataSource,
+		NewZitiServicePolicyDataSource,
+		NewZitiServicePolicyIdsDataSource,
 
-        NewZitiServiceEdgeRouterPolicyDataSource,
-        NewZitiServiceEdgeRouterPolicyIdsDataSource,
+		NewZitiServiceEdgeRouterPolicyDataSource,
+		NewZitiServiceEdgeRouterPolicyIdsDataSource,
 
-        NewZitiEdgeRouterPolicyDataSource,
-        NewZitiEdgeRouterPolicyIdsDataSource,
+		NewZitiEdgeRouterPolicyDataSource,
+		NewZitiEdgeRouterPolicyIdsDataSource,
 
-        NewZitiPostureMultiProcessDataSource,
-        NewZitiPostureMultiProcessIdsDataSource,
+		NewZitiPostureMultiProcessDataSource,
+		NewZitiPostureMultiProcessIdsDataSource,
 
-        NewZitiPostureProcessDataSource,
-        NewZitiPostureProcessIdsDataSource,
+		NewZitiPostureProcessDataSource,
+		NewZitiPostureProcessIdsDataSource,
 
-        NewZitiPostureOperatingSystemDataSource,
-        NewZitiPostureOperatingSystemIdsDataSource,
+		NewZitiPostureOperatingSystemDataSource,
+		NewZitiPostureOperatingSystemIdsDataSource,
 
-        NewZitiPostureMfaDataSource,
-        NewZitiPostureMfaIdsDataSource,
+		NewZitiPostureMfaDataSource,
+		NewZitiPostureMfaIdsDataSource,
 
-        NewZitiPostureMacAddressesDataSource,
-        NewZitiPostureMacAddressesIdsDataSource,
+		NewZitiPostureMacAddressesDataSource,
+		NewZitiPostureMacAddressesIdsDataSource,
 
-        NewZitiPostureDomainsDataSource,
-        NewZitiPostureDomainsIdsDataSource,
-
-
-
+		NewZitiPostureDomainsDataSource,
+		NewZitiPostureDomainsIdsDataSource,
 	}
 }
 

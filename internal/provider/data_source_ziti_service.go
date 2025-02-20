@@ -7,10 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/openziti/edge-api/rest_management_api_client/service"
 	"github.com/openziti/edge-api/rest_util"
@@ -32,17 +32,16 @@ type ZitiServiceDataSource struct {
 // ZitiServiceDataSourceModel describes the resource data model.
 
 type ZitiServiceDataSourceModel struct {
-	ID                     types.String `tfsdk:"id"`
-	Filter                    types.String `tfsdk:"filter"`
-    MostRecent  types.Bool  `tfsdk:"most_recent"`
+	ID         types.String `tfsdk:"id"`
+	Filter     types.String `tfsdk:"filter"`
+	MostRecent types.Bool   `tfsdk:"most_recent"`
 
-	Name                   types.String `tfsdk:"name"`
-    Configs   types.List  `tfsdk:"configs"`
-    EncryptionRequired  types.Bool  `tfsdk:"encryption_required"`
-    MaxIdleTimeMilliseconds types.Int64 `tfsdk:"max_idle_milliseconds"`
-    RoleAttributes  types.List  `tfsdk:"role_attributes"`
-    TerminatorStrategy  types.String `tfsdk:"terminator_strategy"`
-
+	Name                    types.String `tfsdk:"name"`
+	Configs                 types.List   `tfsdk:"configs"`
+	EncryptionRequired      types.Bool   `tfsdk:"encryption_required"`
+	MaxIdleTimeMilliseconds types.Int64  `tfsdk:"max_idle_milliseconds"`
+	RoleAttributes          types.List   `tfsdk:"role_attributes"`
+	TerminatorStrategy      types.String `tfsdk:"terminator_strategy"`
 }
 
 func (d *ZitiServiceDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
@@ -55,7 +54,7 @@ func (d *ZitiServiceDataSource) ConfigValidators(ctx context.Context) []datasour
 		datasourcevalidator.Conflicting(
 			path.MatchRoot("id"),
 			path.MatchRoot("filter"),
-            path.MatchRoot("name"),
+			path.MatchRoot("name"),
 		),
 	}
 }
@@ -68,36 +67,36 @@ func (d *ZitiServiceDataSource) Schema(ctx context.Context, req datasource.Schem
 		MarkdownDescription: "A datasource to define a service of Ziti",
 
 		Attributes: map[string]schema.Attribute{
-            "filter": schema.StringAttribute{
+			"filter": schema.StringAttribute{
 				MarkdownDescription: "ZitiQl filter query",
 				Optional:            true,
 			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Example identifier",
 				Computed:            true,
-                Optional: true,
+				Optional:            true,
 			},
-            "name": schema.StringAttribute{
+			"name": schema.StringAttribute{
 				Computed:            true,
-                Optional:   true,
+				Optional:            true,
 				MarkdownDescription: "Name of a config",
 			},
-            "most_recent": schema.BoolAttribute{
+			"most_recent": schema.BoolAttribute{
 				MarkdownDescription: "A flag which controls whether to get the first result from the filter query",
-                Optional: true,
+				Optional:            true,
 			},
 
-            "terminator_strategy": schema.StringAttribute{
+			"terminator_strategy": schema.StringAttribute{
 				MarkdownDescription: "Name of the service",
-                Computed: true,
+				Computed:            true,
 			},
 			"max_idle_milliseconds": schema.Int64Attribute{
 				MarkdownDescription: "Time after which idle circuit will be terminated. Defaults to 0, which indicates no limit on idle circuits",
-                Computed:   true,
+				Computed:            true,
 			},
 			"encryption_required": schema.BoolAttribute{
 				MarkdownDescription: "Controls end-to-end encryption for the service (default true)",
-                Computed:   true,
+				Computed:            true,
 			},
 			"configs": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -133,7 +132,6 @@ func (d *ZitiServiceDataSource) Configure(ctx context.Context, req datasource.Co
 	d.client = client
 }
 
-
 func (d *ZitiServiceDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiServiceDataSourceModel
 
@@ -144,24 +142,23 @@ func (d *ZitiServiceDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
+	params := service.NewListServicesParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
+	filter := ""
+	if state.ID.ValueString() != "" {
+		filter = "id = \"" + state.ID.ValueString() + "\""
+	} else if state.Name.ValueString() != "" {
+		filter = "name = \"" + state.Name.ValueString() + "\""
+	} else {
+		filter = state.Filter.ValueString()
+	}
 
-    params := service.NewListServicesParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-    filter := ""
-    if state.ID.ValueString() != "" {
-        filter = "id = \"" + state.ID.ValueString() + "\""
-    } else if state.Name.ValueString() != "" {
-        filter = "name = \"" + state.Name.ValueString() + "\""
-    } else {
-        filter = state.Filter.ValueString()
-    }
-
-    params.Filter = &filter
-    data, err := d.client.API.Service.ListServices(params, nil)
-    if err != nil {
+	params.Filter = &filter
+	data, err := d.client.API.Service.ListServices(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -171,38 +168,37 @@ func (d *ZitiServiceDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 
 	serviceLists := data.Payload.Data
-    if len(serviceLists) > 1 && !state.MostRecent.ValueBool() {
-        resp.Diagnostics.AddError(
+	if len(serviceLists) > 1 && !state.MostRecent.ValueBool() {
+		resp.Diagnostics.AddError(
 			"Multiple items returned from API upon filter execution!",
-			"Try to narrow down the filter expression, or set most_recent to true to get the first result: " + filter,
+			"Try to narrow down the filter expression, or set most_recent to true to get the first result: "+filter,
 		)
-    }
-    if len(serviceLists) == 0 {
-        resp.Diagnostics.AddError(
+	}
+	if len(serviceLists) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
-    serviceDetail := serviceLists[0]
+	serviceDetail := serviceLists[0]
 
 	name := serviceDetail.Name
 	state.Name = types.StringValue(*name)
 
-    configs, _ := types.ListValueFrom(ctx, types.StringType, serviceDetail.Configs)
-    state.Configs = configs
+	configs, _ := types.ListValueFrom(ctx, types.StringType, serviceDetail.Configs)
+	state.Configs = configs
 
-    state.EncryptionRequired = types.BoolValue(*serviceDetail.EncryptionRequired)
-    state.MaxIdleTimeMilliseconds = types.Int64Value(*serviceDetail.MaxIdleTimeMillis)
+	state.EncryptionRequired = types.BoolValue(*serviceDetail.EncryptionRequired)
+	state.MaxIdleTimeMilliseconds = types.Int64Value(*serviceDetail.MaxIdleTimeMillis)
 
-    roleAttributes, _ := types.ListValueFrom(ctx, types.StringType, serviceDetail.RoleAttributes)
-    state.RoleAttributes = roleAttributes
+	roleAttributes, _ := types.ListValueFrom(ctx, types.StringType, serviceDetail.RoleAttributes)
+	state.RoleAttributes = roleAttributes
 
-    state.TerminatorStrategy = types.StringValue(*serviceDetail.TerminatorStrategy)
+	state.TerminatorStrategy = types.StringValue(*serviceDetail.TerminatorStrategy)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
-

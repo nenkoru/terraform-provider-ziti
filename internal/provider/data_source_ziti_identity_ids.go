@@ -30,8 +30,8 @@ type ZitiIdentityIdsDataSource struct {
 // ZitiIdentityIdsDataSourceModel describes the resource data model.
 
 type ZitiIdentityIdsDataSourceModel struct {
-    IDS     types.List  `tfsdk:"ids"`
-	Filter                    types.String `tfsdk:"filter"`
+	IDS    types.List   `tfsdk:"ids"`
+	Filter types.String `tfsdk:"filter"`
 }
 
 func (d *ZitiIdentityIdsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -43,11 +43,11 @@ func (d *ZitiIdentityIdsDataSource) Schema(ctx context.Context, req datasource.S
 		MarkdownDescription: "A datasource to define a service of Ziti",
 
 		Attributes: map[string]schema.Attribute{
-            "filter": schema.StringAttribute{
+			"filter": schema.StringAttribute{
 				MarkdownDescription: "ZitiQl filter query",
 				Optional:            true,
 			},
-            "ids": schema.ListAttribute{
+			"ids": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "An array of allowed addresses that could be forwarded.",
 				Computed:            true,
@@ -76,7 +76,6 @@ func (d *ZitiIdentityIdsDataSource) Configure(ctx context.Context, req datasourc
 	d.client = client
 }
 
-
 func (d *ZitiIdentityIdsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ZitiIdentityIdsDataSourceModel
 
@@ -87,17 +86,16 @@ func (d *ZitiIdentityIdsDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
+	params := identity.NewListIdentitiesParams()
+	var limit int64 = 1000
+	var offset int64 = 0
+	params.Limit = &limit
+	params.Offset = &offset
 
-    params := identity.NewListIdentitiesParams()
-    var limit int64 = 1000
-    var offset int64 = 0
-    params.Limit = &limit
-    params.Offset = &offset
-
-    filter := state.Filter.ValueString()
-    params.Filter = &filter
-    data, err := d.client.API.Identity.ListIdentities(params, nil)
-    if err != nil {
+	filter := state.Filter.ValueString()
+	params.Filter = &filter
+	data, err := d.client.API.Identity.ListIdentities(params, nil)
+	if err != nil {
 		err = rest_util.WrapErr(err)
 		resp.Diagnostics.AddError(
 			"Error Reading Ziti Config from API",
@@ -107,25 +105,24 @@ func (d *ZitiIdentityIdsDataSource) Read(ctx context.Context, req datasource.Rea
 	}
 
 	identities := data.Payload.Data
-    if len(identities) == 0 {
-        resp.Diagnostics.AddError(
+	if len(identities) == 0 {
+		resp.Diagnostics.AddError(
 			"No items returned from API upon filter execution!",
-            "Try to relax the filter expression: " + filter,
+			"Try to relax the filter expression: "+filter,
 		)
-    }
-    if resp.Diagnostics.HasError() {
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-    var ids []string
-    for _, identity := range identities {
-        ids = append(ids, *identity.ID)
-    }
+	var ids []string
+	for _, identity := range identities {
+		ids = append(ids, *identity.ID)
+	}
 
-    idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
-    state.IDS = idsList
+	idsList, _ := types.ListValueFrom(ctx, types.StringType, ids)
+	state.IDS = idsList
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 
 }
-
