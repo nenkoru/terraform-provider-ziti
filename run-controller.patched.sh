@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 ziti_controller_cfg="${ZITI_HOME}/ziti-edge-controller.yaml"
 
 # Global Variables
