@@ -23,6 +23,7 @@ services:
       - ZITI_USER=testadmin
       - ZITI_PWD=testadmin
       - ZITI_VERBOSE=--verbose
+    volumes:
+      - "./run-controller.patched.sh:/var/openziti/scripts/run-controller.sh"
     entrypoint:
       - "/var/openziti/scripts/run-controller.sh"
-
