@@ -1,6 +1,6 @@
 module terraform-provider-ziti
 
-go 1.22.7
+go 1.24.0
 
 require (
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
@@ -17,7 +17,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/analysis v0.23.0 // indirect
@@ -39,12 +39,12 @@ require (
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
-	github.com/hashicorp/go-plugin v1.6.2 // indirect
+	github.com/hashicorp/go-plugin v1.7.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/hashicorp/terraform-plugin-go v0.25.0 // indirect
-	github.com/hashicorp/terraform-registry-address v0.2.3 // indirect
+	github.com/hashicorp/terraform-plugin-go v0.29.0 // indirect
+	github.com/hashicorp/terraform-registry-address v0.4.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
-	github.com/hashicorp/yamux v0.1.1 // indirect
+	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kataras/go-events v0.0.3 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -58,7 +58,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/oklog/run v1.0.0 // indirect
+	github.com/oklog/run v1.1.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openziti/channel/v3 v3.0.4 // indirect
@@ -72,7 +72,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -86,20 +85,21 @@ require (
 	github.com/zitadel/oidc/v2 v2.12.2 // indirect
 	go.mongodb.org/mongo-driver v1.17.0 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
-	go.opentelemetry.io/otel v1.29.0 // indirect
-	go.opentelemetry.io/otel/metric v1.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.29.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/otel v1.37.0 // indirect
+	go.opentelemetry.io/otel/metric v1.37.0 // indirect
+	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
-	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
-	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/term v0.34.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/grpc v1.75.1 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	nhooyr.io/websocket v1.8.17 // indirect
